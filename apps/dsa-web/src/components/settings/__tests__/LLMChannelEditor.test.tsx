@@ -988,6 +988,47 @@ describe('LLMChannelEditor', () => {
     }));
   });
 
+  it('shows provider blocked troubleshooting hints without network wording', async () => {
+    testLLMChannel.mockResolvedValue({
+      success: false,
+      message: 'LLM request was blocked by provider or gateway policy',
+      error: 'litellm.APIError: APIError: OpenAIException - Your request was blocked.',
+      errorCode: 'request_blocked',
+      stage: 'chat_completion',
+      retryable: false,
+      details: { reason: 'provider_blocked', model: 'openai/gpt-5.5' },
+      resolvedProtocol: 'openai',
+      resolvedModel: 'openai/gpt-5.5',
+      latencyMs: null,
+    });
+
+    render(
+      <LLMChannelEditor
+        items={[
+          { key: 'LLM_CHANNELS', value: 'openai' },
+          { key: 'LLM_OPENAI_PROTOCOL', value: 'openai' },
+          { key: 'LLM_OPENAI_BASE_URL', value: 'https://proxy.example.com/v1' },
+          { key: 'LLM_OPENAI_ENABLED', value: 'true' },
+          { key: 'LLM_OPENAI_API_KEY', value: 'secret-key' },
+          { key: 'LLM_OPENAI_MODELS', value: 'gpt-5.5,gpt-4o-mini' },
+        ]}
+        configVersion="v1"
+        maskToken="******"
+        onSaved={() => {}}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /OpenAI 官方/i }));
+    fireEvent.click(screen.getByRole('button', { name: '测试连接' }));
+
+    expect(await screen.findByText(/聊天调用 · 请求被拦截：LLM request was blocked/i)).toBeInTheDocument();
+    expect(screen.getByText(/本次测试模型：openai\/gpt-5\.5/i)).toBeInTheDocument();
+    expect(screen.getByText(/基础连接测试默认使用模型列表首项：gpt-5\.5/i)).toBeInTheDocument();
+    expect(screen.getByText(/账号风控、地域限制、模型权限、网关策略、内容安全策略/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Base URL、代理、TLS/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/调整模型顺序或移除不可用模型/i)).not.toBeInTheDocument();
+  });
+
   it('shows focused quota exceeded troubleshooting hints', async () => {
     testLLMChannel.mockResolvedValue({
       success: false,

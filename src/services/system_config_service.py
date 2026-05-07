@@ -2572,6 +2572,13 @@ class SystemConfigService:
                 "Configured model could not be found on this channel",
                 "model_not_found",
             )
+        if SystemConfigService._has_provider_blocked_signal(error_text or ""):
+            return _LLMDiagnostic(
+                "request_blocked",
+                False,
+                "LLM request was blocked by provider or gateway policy",
+                "provider_blocked",
+            )
         if status_code in {401, 403} or any(token in lowered for token in ("unauthorized", "forbidden", "invalid api key", "authentication")):
             return _LLMDiagnostic("auth", False, "LLM authentication failed", "api_key_rejected")
         if status_code == 402 or any(token in lowered for token in ("billing", "balance", "insufficient balance")):
@@ -2657,6 +2664,18 @@ class SystemConfigService:
         return any(token in lowered for token in access_denied_tokens)
 
     @staticmethod
+    def _has_provider_blocked_signal(text: str) -> bool:
+        lowered = text.lower()
+        blocked_tokens = (
+            "your request was blocked",
+            "request was blocked",
+            "request blocked",
+            "blocked by policy",
+            "moderation_blocked",
+        )
+        return any(token in lowered for token in blocked_tokens)
+
+    @staticmethod
     def _has_provider_prefix_mismatch_signal(text: str) -> bool:
         lowered = text.lower()
         mismatch_tokens = (
@@ -2695,6 +2714,13 @@ class SystemConfigService:
                 True,
                 "LLM request was rejected by quota or rate limiting",
                 "rate_limit",
+            )
+        if SystemConfigService._has_provider_blocked_signal(str(exc)):
+            return _LLMDiagnostic(
+                "request_blocked",
+                False,
+                "LLM request was blocked by provider or gateway policy",
+                "provider_blocked",
             )
         if SystemConfigService._has_provider_prefix_mismatch_signal(text):
             return _LLMDiagnostic(

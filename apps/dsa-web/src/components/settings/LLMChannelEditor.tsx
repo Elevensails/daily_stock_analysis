@@ -711,6 +711,7 @@ const LLM_ERROR_LABELS: Record<string, string> = {
   model_not_found: '模型不可用',
   empty_response: '空响应',
   format_error: '格式异常',
+  request_blocked: '请求被拦截',
   network_error: '网络异常',
   invalid_config: '配置无效',
   unsupported_protocol: '协议暂不支持',
@@ -724,6 +725,7 @@ const LLM_TROUBLESHOOTING_HINTS: Record<string, string> = {
   quota: '请检查余额、套餐额度、RPM/TPM 限流或并发设置，必要时稍后重试。',
   model_not_found: '请确认模型名与渠道协议匹配，并先用“获取模型”核对该渠道实际可用模型列表。',
   empty_response: '渠道已连通但未返回正文；可尝试切换兼容模型、关闭额外响应模式后再测试。',
+  request_blocked: '服务商或中转网关拒绝了本次请求；请检查账号风控、地域限制、模型权限、网关策略、内容安全策略或请求来源限制。',
   network_error: '请检查 Base URL、代理、TLS/证书、中转网关或本地网络策略，并可稍后重试。',
   invalid_config: '先补齐协议、Base URL、API Key 和模型配置，再执行一键测试。',
   unsupported_protocol: '当前仅对 OpenAI Compatible / DeepSeek 渠道提供自动模型发现，请改为手动维护模型列表。',
@@ -739,6 +741,7 @@ const LLM_REASON_HINTS: Record<string, string> = {
   tls_error: 'TLS/证书握手失败；请检查 HTTPS 证书、中转网关或公司代理策略。',
   connection_refused: '目标服务拒绝连接；请确认 Base URL 端口、服务进程和防火墙配置。',
   model_access_denied: '当前账号无法使用该模型；请确认模型是否已开通、账号是否可见，或模型是否已被禁用。',
+  provider_blocked: '服务商或中转网关拦截了请求；请检查账号风控、地域限制、模型权限、网关策略、内容安全策略或请求来源限制。',
   provider_prefix_mismatch: '模型 provider 前缀与当前渠道不匹配；请确认模型名是否应使用该渠道的 OpenAI-compatible 路由。',
   capability_unsupported: '当前模型或兼容层不支持该能力；这不影响基础文本连接，可换模型或关闭该能力依赖。',
 };

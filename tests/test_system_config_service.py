@@ -1411,6 +1411,9 @@ class SystemConfigServiceTestCase(unittest.TestCase):
             (Exception("model gpt-4o is not authorized for this account"), "model_not_found", "model_access_denied"),
             (Exception("litellm.APIError: APIError: OpenAIException - Model disabled."), "model_not_found", "model_access_denied"),
             (Exception("Model is disabled for this account"), "model_not_found", "model_access_denied"),
+            (Exception("litellm.APIError: APIError: OpenAIException - Your request was blocked."), "request_blocked", "provider_blocked"),
+            (Exception("request was blocked by policy"), "request_blocked", "provider_blocked"),
+            (Exception("moderation_blocked"), "request_blocked", "provider_blocked"),
             (Exception("LLM Provider NOT provided for model foo"), "model_not_found", "provider_prefix_mismatch"),
         ]
 
@@ -1496,6 +1499,8 @@ class SystemConfigServiceTestCase(unittest.TestCase):
         quota_exceeded_response.json.return_value = {"error": {"message": "insufficient_quota"}}
         rate_limit_response = Mock(ok=False, status_code=429, text="too many requests")
         rate_limit_response.json.return_value = {"error": {"message": "too many requests"}}
+        blocked_response = Mock(ok=False, status_code=403, text="Your request was blocked.")
+        blocked_response.json.return_value = {"error": {"message": "Your request was blocked."}}
         invalid_json_response = Mock(ok=True, status_code=200, text="<html>bad gateway</html>")
         invalid_json_response.json.side_effect = ValueError("invalid json")
 
@@ -1506,6 +1511,7 @@ class SystemConfigServiceTestCase(unittest.TestCase):
             (billing_rate_limit_response, "quota", "model_discovery", True, "insufficient_balance"),
             (quota_exceeded_response, "quota", "model_discovery", True, "quota_exceeded"),
             (rate_limit_response, "quota", "model_discovery", True, "rate_limit"),
+            (blocked_response, "request_blocked", "model_discovery", False, "provider_blocked"),
             (invalid_json_response, "format_error", "response_parse", False, "non_json"),
         ]:
             with self.subTest(error_code=error_code):
