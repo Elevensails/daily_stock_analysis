@@ -639,6 +639,36 @@ describe('SettingsPage', () => {
     expect(screen.getByRole('button', { name: '导入 .env' })).toBeInTheDocument();
   });
 
+  it('disables env backup actions when web auth is not enabled in config', async () => {
+    const baseState = buildSystemConfigState();
+    useAuthMock.mockReturnValue({
+      authEnabled: false,
+      passwordChangeable: true,
+      refreshStatus,
+    });
+    useSystemConfigMock.mockReturnValue({
+      ...baseState,
+      itemsByCategory: {
+        ...baseState.itemsByCategory,
+        system: [
+          {
+            ...baseState.itemsByCategory.system[0],
+            value: 'false',
+          },
+        ],
+      },
+    });
+
+    render(<SettingsPage />);
+
+    const exportButton = screen.getByRole('button', { name: '导出 .env' });
+    const importButton = screen.getByRole('button', { name: '导入 .env' });
+
+    expect(await screen.findByText(/当前 Web 端未开启管理员鉴权/)).toBeInTheDocument();
+    expect(exportButton).toBeDisabled();
+    expect(importButton).toBeDisabled();
+  });
+
   it('exports saved env from config backup actions', async () => {
     (window as { dsaDesktop?: unknown }).dsaDesktop = { version: '3.12.0' };
 

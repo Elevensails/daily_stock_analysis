@@ -251,6 +251,9 @@ const SettingsPage: React.FC = () => {
 
   const rawActiveItems = itemsByCategory[activeCategory] || [];
   const rawActiveItemMap = new Map(rawActiveItems.map((item) => [item.key, String(item.value ?? '')]));
+  const systemItems = itemsByCategory.system || [];
+  const systemItemMap = new Map(systemItems.map((item) => [item.key, String(item.value ?? '')]));
+  const isAdminAuthEnabledInConfig = systemItemMap.get('ADMIN_AUTH_ENABLED') === 'true';
   const hasConfiguredChannels = Boolean((rawActiveItemMap.get('LLM_CHANNELS') || '').trim());
   const hasLitellmConfig = Boolean((rawActiveItemMap.get('LITELLM_CONFIG') || '').trim());
 
@@ -304,7 +307,8 @@ const SettingsPage: React.FC = () => {
       : activeCategory === 'agent'
         ? rawActiveItems.filter((item) => !AGENT_HIDDEN_KEYS.has(item.key))
       : rawActiveItems;
-  const envBackupActionDisabled = isLoading || isSaving || isExportingEnv || isImportingEnv;
+  const isEnvBackupAllowed = isDesktopRuntime || isAdminAuthEnabledInConfig;
+  const envBackupActionDisabled = isLoading || isSaving || isExportingEnv || isImportingEnv || !isEnvBackupAllowed;
 
   const downloadEnvBackup = async () => {
     setEnvBackupActionError(null);
@@ -573,6 +577,12 @@ const SettingsPage: React.FC = () => {
                 description="导出当前已保存的 .env 备份，或从备份文件恢复配置。导入会覆盖备份中出现的键并立即重载。"
               >
                 <div className="space-y-4">
+                  {!isEnvBackupAllowed ? (
+                    <p className="text-xs leading-6 text-amber-700 dark:text-amber-300">
+                      当前 Web 端未开启管理员鉴权，导出/导入 `.env` 备份功能已停用；请先将
+                      `ADMIN_AUTH_ENABLED` 设为 `true` 并完成管理员登录后再使用。
+                    </p>
+                  ) : null}
                   <div className="flex flex-wrap items-center gap-3">
                     <Button
                       type="button"

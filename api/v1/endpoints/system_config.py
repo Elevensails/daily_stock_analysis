@@ -57,7 +57,7 @@ def _allow_env_backup_access(request: Request) -> None:
             raise PermissionError("System configuration backup requires a valid admin session")
         return
 
-    raise PermissionError("System configuration backup endpoints are not enabled")
+    raise PermissionError("env_backup_access_disabled")
 
 
 @router.get(
@@ -179,6 +179,7 @@ def update_system_config(
     responses={
         200: {"description": "Env exported"},
         401: {"description": "Unauthorized", "model": ErrorResponse},
+        403: {"description": "Env backup disabled", "model": ErrorResponse},
         500: {"description": "Internal server error", "model": ErrorResponse},
     },
     summary="Export env backup",
@@ -193,11 +194,19 @@ def export_system_config(
         _allow_env_backup_access(request)
     except PermissionError as exc:
         logger.warning("System config export blocked: %s", exc)
+        if str(exc) == "env_backup_access_disabled":
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "error": "env_backup_access_denied",
+                    "message": "System config backup is disabled; enable admin authentication first",
+                },
+            )
         raise HTTPException(
             status_code=401,
             detail={
                 "error": "env_backup_access_denied",
-                "message": "System config backup is disabled; enable admin authentication first",
+                "message": "System config backup requires a valid admin session",
             },
         )
 
@@ -235,6 +244,7 @@ def export_system_config(
         },
         401: {"description": "Unauthorized", "model": ErrorResponse},
         409: {"description": "Version conflict", "model": SystemConfigConflictResponse},
+        403: {"description": "Env backup disabled", "model": ErrorResponse},
         500: {"description": "Internal server error", "model": ErrorResponse},
     },
     summary="Import env backup",
@@ -250,11 +260,19 @@ def import_system_config(
         _allow_env_backup_access(request_obj)
     except PermissionError as exc:
         logger.warning("System config import blocked: %s", exc)
+        if str(exc) == "env_backup_access_disabled":
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "error": "env_backup_access_denied",
+                    "message": "System config backup is disabled; enable admin authentication first",
+                },
+            )
         raise HTTPException(
             status_code=401,
             detail={
                 "error": "env_backup_access_denied",
-                "message": "System config backup is disabled; enable admin authentication first",
+                "message": "System config backup requires a valid admin session",
             },
         )
 

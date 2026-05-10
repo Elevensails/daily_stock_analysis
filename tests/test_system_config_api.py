@@ -376,7 +376,7 @@ class SystemConfigApiTestCase(unittest.TestCase):
                     request=self._build_request(),
                     service=self.service,
                 )
-            self.assertEqual(export_ctx.exception.status_code, 401)
+            self.assertEqual(export_ctx.exception.status_code, 403)
             self.assertEqual(export_ctx.exception.detail["error"], "env_backup_access_denied")
 
             with self.assertRaises(HTTPException) as import_ctx:
@@ -389,7 +389,7 @@ class SystemConfigApiTestCase(unittest.TestCase):
                     ),
                     service=self.service,
                 )
-            self.assertEqual(import_ctx.exception.status_code, 401)
+            self.assertEqual(import_ctx.exception.status_code, 403)
             self.assertEqual(import_ctx.exception.detail["error"], "env_backup_access_denied")
 
     def test_config_env_endpoints_require_explicit_true_for_desktop_bypass(self) -> None:
@@ -421,7 +421,7 @@ class SystemConfigApiTestCase(unittest.TestCase):
                     service=self.service,
                 )
 
-            self.assertEqual(export_ctx.exception.status_code, 401)
+            self.assertEqual(export_ctx.exception.status_code, 403)
             self.assertEqual(export_ctx.exception.detail["error"], "env_backup_access_denied")
 
     def test_config_env_endpoints_return_server_error_for_storage_permission_error(self) -> None:

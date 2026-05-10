@@ -524,7 +524,17 @@
             }
           },
           "401": {
-            "description": "未认证",
+            "description": "未登录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "未开启管理员鉴权（`ADMIN_AUTH_ENABLED=false`）",
             "content": {
               "application/json": {
                 "schema": {
@@ -594,6 +604,16 @@
           },
           "401": {
             "description": "未认证",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "未开启管理员鉴权（`ADMIN_AUTH_ENABLED=false`）",
             "content": {
               "application/json": {
                 "schema": {
