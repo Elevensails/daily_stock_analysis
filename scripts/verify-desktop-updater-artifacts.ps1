@@ -25,7 +25,11 @@ if (-not $DistDir) {
   $DistDir = Join-Path $PSScriptRoot '..\apps\dsa-desktop\dist'
 }
 
-$distDirPath = (Resolve-Path $DistDir -ErrorAction SilentlyContinue)?.Path
+$resolvedDistDir = Resolve-Path $DistDir -ErrorAction SilentlyContinue
+$distDirPath = ''
+if ($resolvedDistDir) {
+  $distDirPath = $resolvedDistDir.Path
+}
 if (-not $distDirPath) {
   Write-Host "[check] dist directory not found: $DistDir"
   Write-Host "[check] if build is not executed on this host, skip validation."
@@ -79,7 +83,10 @@ $releaseAssetsDirPath = ''
 $releaseAssetsDirWasExplicit = -not [string]::IsNullOrWhiteSpace($ReleaseAssetsDir)
 
 if ($releaseAssetsDirWasExplicit) {
-  $releaseAssetsDirPath = (Resolve-Path $ReleaseAssetsDir -ErrorAction SilentlyContinue)?.Path
+  $resolvedReleaseAssetsDir = Resolve-Path $ReleaseAssetsDir -ErrorAction SilentlyContinue
+  if ($resolvedReleaseAssetsDir) {
+    $releaseAssetsDirPath = $resolvedReleaseAssetsDir.Path
+  }
   if (-not $releaseAssetsDirPath) {
     throw "Release assets directory not found: $ReleaseAssetsDir"
   }
@@ -87,7 +94,10 @@ if ($releaseAssetsDirWasExplicit) {
   $releaseAssetsDirPath = $distDirPath
 } else {
   $defaultReleaseAssetsDir = Join-Path $distDirPath 'release-assets'
-  $releaseAssetsDirPath = (Resolve-Path $defaultReleaseAssetsDir -ErrorAction SilentlyContinue)?.Path
+  $resolvedReleaseAssetsDir = Resolve-Path $defaultReleaseAssetsDir -ErrorAction SilentlyContinue
+  if ($resolvedReleaseAssetsDir) {
+    $releaseAssetsDirPath = $resolvedReleaseAssetsDir.Path
+  }
 }
 
 if ($releaseAssetsDirPath) {
