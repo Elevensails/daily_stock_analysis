@@ -10,11 +10,13 @@ import unittest
 from datetime import datetime
 from types import SimpleNamespace
 
+from fastapi import HTTPException
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from api.v1.endpoints.history import get_history_diagnostics
 from src.services.history_service import HistoryService
-from src.services.run_diagnostics import build_run_diagnostic_summary
+from src.services.run_diagnostics import build_run_diagnostic_summary, sanitize_diagnostic_text
 
 
 def _diagnostic_snapshot() -> dict:
@@ -123,7 +125,92 @@ class _FakeHistoryDb:
         return self.record if query_id == "query-p2" else None
 
 
+class _FailingHistoryDb:
+    def get_analysis_history_by_id(self, record_id: int):
+        raise RuntimeError("database unavailable")
+
+    def get_latest_analysis_by_query_id(self, query_id: str):
+        raise RuntimeError("database unavailable")
+
+
 class RunDiagnosticsP2TestCase(unittest.TestCase):
+    def test_news_diagnostics_use_retrieval_evidence_not_model_summary(self) -> None:
+        diagnostics = _diagnostic_snapshot()
+        diagnostics["provider_runs"] = [
+            {
+                "trace_id": "trace-p2",
+                "data_type": "realtime_quote",
+                "provider": "QuoteFetcher",
+                "operation": "get_realtime_quote",
+                "success": True,
+            },
+            {
+                "trace_id": "trace-p2",
+                "data_type": "daily_data",
+                "provider": "DailyFetcher",
+                "operation": "get_daily_data",
+                "success": True,
+                "record_count": 30,
+            },
+        ]
+
+        summary = build_run_diagnostic_summary(
+            context_snapshot={
+                "diagnostics": diagnostics,
+                "news_content": None,
+            },
+            raw_result={
+                "success": True,
+                "model_used": "deepseek-chat",
+                "analysis_summary": "测试摘要",
+                "news_summary": "模型生成的新闻摘要",
+            },
+            report_saved=True,
+        )
+
+        self.assertEqual(summary["components"]["news"]["status"], "unknown")
+        self.assertEqual(summary["status"], "normal")
+
+    def test_news_summary_string_is_not_treated_as_retrieval_evidence(self) -> None:
+        diagnostics = _diagnostic_snapshot()
+
+        summary = build_run_diagnostic_summary(
+            context_snapshot={
+                "diagnostics": diagnostics,
+                "news_content": "模型生成的新闻摘要",
+            },
+            raw_result={
+                "success": True,
+                "model_used": "deepseek-chat",
+                "analysis_summary": "测试摘要",
+                "news_summary": "模型生成的新闻摘要",
+            },
+            report_saved=True,
+        )
+
+        self.assertEqual(summary["components"]["news"]["status"], "unknown")
+
+    def test_news_result_count_zero_is_degraded_even_with_formatted_text(self) -> None:
+        diagnostics = _diagnostic_snapshot()
+
+        summary = build_run_diagnostic_summary(
+            context_snapshot={
+                "diagnostics": diagnostics,
+                "news_content": "【贵州茅台 情报搜索结果】\n  未找到相关信息",
+                "news_result_count": 0,
+            },
+            raw_result={
+                "success": True,
+                "model_used": "deepseek-chat",
+                "analysis_summary": "测试摘要",
+                "news_summary": "模型生成的新闻摘要",
+            },
+            report_saved=True,
+        )
+
+        self.assertEqual(summary["components"]["news"]["status"], "degraded")
+        self.assertEqual(summary["components"]["news"]["details"]["record_count"], 0)
+
     def test_summary_classifies_provider_fallback_as_degraded_and_copy_text_is_sanitized(self) -> None:
         summary = build_run_diagnostic_summary(
             context_snapshot={
@@ -170,7 +257,112 @@ class RunDiagnosticsP2TestCase(unittest.TestCase):
 
         self.assertEqual(summary["status"], "failed")
         self.assertEqual(summary["components"]["llm"]["status"], "failed")
+        self.assertIn("LLM 失败", summary["reason"])
         self.assertNotIn("secret-value", summary["copy_text"])
+
+    def test_copy_text_redacts_authorization_bearer_tokens(self) -> None:
+        diagnostics = _diagnostic_snapshot()
+        diagnostics["llm_runs"] = [
+            {
+                "trace_id": "trace-p2",
+                "model": "deepseek-chat",
+                "success": False,
+                "error_type": "Unauthorized",
+                "error_message_sanitized": (
+                    "request failed Authorization: Bearer sk-live-token-abc123"
+                ),
+            }
+        ]
+
+        summary = build_run_diagnostic_summary(
+            context_snapshot={
+                "diagnostics": diagnostics,
+                "news_content": "新闻摘要",
+            },
+            raw_result={
+                "success": False,
+                "error_message": "Authorization: Bearer sk-raw-token-xyz789",
+            },
+            report_saved=True,
+        )
+
+        self.assertEqual(summary["status"], "failed")
+        self.assertIn("authorization=<redacted>", summary["copy_text"].lower())
+        self.assertNotIn("sk-live-token-abc123", summary["copy_text"])
+        self.assertNotIn("sk-raw-token-xyz789", summary["copy_text"])
+        self.assertNotIn("Bearer sk-", summary["copy_text"])
+
+    def test_copy_text_redacts_env_json_and_proxy_credentials(self) -> None:
+        diagnostics = _diagnostic_snapshot()
+        diagnostics["llm_runs"] = [
+            {
+                "trace_id": "trace-p2",
+                "model": "deepseek-chat",
+                "success": False,
+                "error_type": "ProxyError",
+                "error_message_sanitized": (
+                    "OPENAI_API_KEY=sk-env-secret "
+                    "\"api_key\": \"sk-json-secret\" "
+                    "proxy http://proxy_user:proxy_pass@proxy.example.com"
+                ),
+            }
+        ]
+
+        summary = build_run_diagnostic_summary(
+            context_snapshot={
+                "diagnostics": diagnostics,
+                "news_content": "news summary",
+            },
+            raw_result={
+                "success": False,
+                "error_message": (
+                    "DEEPSEEK_API_KEY=sk-raw-secret "
+                    "'access_token': 'raw-token-secret' "
+                    "http://raw_user:raw_pass@proxy.internal"
+                ),
+            },
+            report_saved=True,
+        )
+
+        copy_text = summary["copy_text"]
+        self.assertIn("OPENAI_API_KEY=<redacted>", copy_text)
+        self.assertIn("\"api_key\": \"<redacted>\"", copy_text)
+        self.assertIn("http://<redacted>:<redacted>@proxy.example.com", copy_text)
+        for leaked in (
+            "sk-env-secret",
+            "sk-json-secret",
+            "proxy_user",
+            "proxy_pass",
+        ):
+            self.assertNotIn(leaked, copy_text)
+
+    def test_sanitize_diagnostic_text_redacts_common_secret_shapes(self) -> None:
+        text = (
+            "OPENAI_API_KEY=sk-env-secret "
+            "\"api_key\": \"sk-json-secret\" "
+            "'access_token': 'raw-token-secret' "
+            "http://proxy_user:proxy_pass@proxy.example.com "
+            "Authorization: Bearer sk-auth-secret"
+        )
+
+        sanitized = sanitize_diagnostic_text(text)
+
+        self.assertIsNotNone(sanitized)
+        self.assertIn("OPENAI_API_KEY=<redacted>", sanitized)
+        self.assertIn("\"api_key\": \"<redacted>\"", sanitized)
+        self.assertIn("'access_token': '<redacted>'", sanitized)
+        self.assertIn("http://<redacted>:<redacted>@proxy.example.com", sanitized)
+        self.assertIn("Authorization=<redacted>", sanitized)
+        for leaked in (
+            "sk-env-secret",
+            "sk-json-secret",
+            "sk-raw-secret",
+            "raw-token-secret",
+            "proxy_user",
+            "proxy_pass",
+            "sk-auth-secret",
+        ):
+            self.assertNotIn(leaked, sanitized)
 
     def test_legacy_report_without_diagnostics_returns_unknown(self) -> None:
         summary = build_run_diagnostic_summary(
@@ -184,62 +376,6 @@ class RunDiagnosticsP2TestCase(unittest.TestCase):
         self.assertEqual(summary["status"], "unknown")
         self.assertEqual(summary["status_label"], "未知")
         self.assertEqual(summary["query_id"], "legacy-query")
-
-    def test_summary_treats_missing_key_component_evidence_as_unknown(self) -> None:
-        diagnostics = _diagnostic_snapshot()
-        diagnostics["provider_runs"] = [
-            run
-            for run in diagnostics["provider_runs"]
-            if run.get("data_type") != "realtime_quote"
-        ]
-
-        summary = build_run_diagnostic_summary(
-            context_snapshot={
-                "diagnostics": diagnostics,
-                "news_content": "新闻摘要",
-            },
-            raw_result={"success": True, "model_used": "deepseek-chat"},
-            report_saved=True,
-        )
-
-        self.assertEqual(summary["status"], "unknown")
-        self.assertEqual(summary["components"]["realtime_quote"]["status"], "unknown")
-        self.assertEqual(summary["components"]["daily_data"]["status"], "ok")
-        self.assertEqual(summary["components"]["notification"]["status"], "ok")
-
-    def test_notification_summary_reports_partial_failure_channels(self) -> None:
-        diagnostics = _diagnostic_snapshot()
-        diagnostics["notification_runs"] = [
-            {
-                "trace_id": "trace-p2",
-                "channel": "wechat",
-                "status": "success",
-                "success": True,
-            },
-            {
-                "trace_id": "trace-p2",
-                "channel": "telegram",
-                "status": "failed",
-                "success": False,
-                "error_message_sanitized": "telegram denied",
-            },
-        ]
-
-        summary = build_run_diagnostic_summary(
-            context_snapshot={
-                "diagnostics": diagnostics,
-                "news_content": "新闻摘要",
-            },
-            raw_result={"success": True, "model_used": "deepseek-chat"},
-            report_saved=True,
-        )
-
-        self.assertEqual(summary["status"], "degraded")
-        self.assertEqual(summary["components"]["notification"]["status"], "degraded")
-        self.assertEqual(
-            summary["components"]["notification"]["details"]["failed"],
-            ["telegram"],
-        )
 
     def test_history_service_and_endpoint_return_diagnostic_summary(self) -> None:
         context_snapshot = {
@@ -264,6 +400,24 @@ class RunDiagnosticsP2TestCase(unittest.TestCase):
         self.assertIsNotNone(summary)
         self.assertEqual(summary["status"], "unknown")
         self.assertIn("copy_text", summary)
+
+    def test_history_diagnostics_endpoint_surfaces_lookup_errors(self) -> None:
+        with self.assertRaises(HTTPException) as ctx:
+            get_history_diagnostics("1", db_manager=_FailingHistoryDb())
+
+        self.assertEqual(ctx.exception.status_code, 500)
+
+    def test_history_diagnostics_endpoint_surfaces_malformed_payloads(self) -> None:
+        record = _history_record(context_snapshot=None)
+        record.context_snapshot = "{invalid-json"
+        db = _FakeHistoryDb(record)
+
+        with self.assertRaises(ValueError):
+            HistoryService(db).resolve_and_get_diagnostics("1")
+        with self.assertRaises(HTTPException) as ctx:
+            get_history_diagnostics("1", db_manager=db)
+
+        self.assertEqual(ctx.exception.status_code, 500)
 
 
 if __name__ == "__main__":

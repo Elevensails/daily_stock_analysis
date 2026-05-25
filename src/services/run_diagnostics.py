@@ -23,13 +23,45 @@ _CURRENT_CONTEXT: ContextVar[Optional["RunDiagnosticContext"]] = ContextVar(
     default=None,
 )
 
-_SECRET_PATTERNS = (
-    re.compile(
-        r"(?i)\b(api[_-]?key|access[_-]?token|token|secret|password|passwd|cookie|authorization)"
-        r"\s*[:=]\s*([^\s,&]+)"
+_SECRET_REDACTIONS = (
+    (
+        re.compile(r"(?i)\b(authorization)\s*[:=]\s*(?:(?:Bearer|Basic|Token)\s+)?[^\s,&;]+"),
+        lambda match: f"{match.group(1)}=<redacted>",
     ),
-    re.compile(r"(?i)\bBearer\s+[A-Za-z0-9._~+/=-]+"),
-    re.compile(r"https?://[^\s]+?(?:token|key|secret|webhook)[^\s]*", re.IGNORECASE),
+    (
+        re.compile(r"(https?://)([^/\s:@]+):([^@\s/]+)@"),
+        r"\1<redacted>:<redacted>@",
+    ),
+    (
+        re.compile(r"https?://[^\s]+?(?:token|key|secret|webhook)[^\s]*", re.IGNORECASE),
+        "<redacted-url>",
+    ),
+    (
+        re.compile(
+            r"(?i)([\"']?)"
+            r"([A-Z0-9_]*?(?:api[_-]?key|access[_-]?token|token|secret|password|passwd|cookie))"
+            r"\1\s*:\s*([\"'])([^\"']+)\3"
+        ),
+        lambda match: f"{match.group(1)}{match.group(2)}{match.group(1)}: {match.group(3)}<redacted>{match.group(3)}",
+    ),
+    (
+        re.compile(
+            r"(?i)\b([A-Z0-9_]*?(?:api[_-]?key|access[_-]?token|token|secret|password|passwd|cookie))"
+            r"\s*=\s*([^\s,&;]+)"
+        ),
+        lambda match: f"{match.group(1)}=<redacted>",
+    ),
+    (
+        re.compile(
+            r"(?i)\b(api[_-]?key|access[_-]?token|token|secret|password|passwd|cookie)"
+            r"\s*:\s*([^\s,&;]+)"
+        ),
+        lambda match: f"{match.group(1)}=<redacted>",
+    ),
+    (
+        re.compile(r"(?i)\bBearer\s+[A-Za-z0-9._~+/=-]+"),
+        "Bearer <redacted>",
+    ),
 )
 
 
@@ -47,13 +79,8 @@ def sanitize_diagnostic_text(value: Any, *, max_length: int = 300) -> Optional[s
     if not text:
         return None
 
-    for pattern in _SECRET_PATTERNS:
-        if "Bearer" in pattern.pattern:
-            text = pattern.sub("Bearer <redacted>", text)
-        elif "https?" in pattern.pattern:
-            text = pattern.sub("<redacted-url>", text)
-        else:
-            text = pattern.sub(lambda match: f"{match.group(1)}=<redacted>", text)
+    for pattern, replacement in _SECRET_REDACTIONS:
+        text = pattern.sub(replacement, text)
 
     if len(text) > max_length:
         return f"{text[:max_length].rstrip()}..."
@@ -553,15 +580,21 @@ def _provider_component(
 
 def _news_component(context_snapshot: Dict[str, Any], raw_result: Dict[str, Any]) -> RunDiagnosticComponent:
     label = "新闻搜索"
-    has_snapshot_news = "news_content" in context_snapshot
-    news_content = context_snapshot.get("news_content")
-    news_summary = raw_result.get("news_summary")
-    if isinstance(news_content, str) and news_content.strip():
-        return _component("news", label, "ok", "新闻摘要已获取")
-    if isinstance(news_summary, str) and news_summary.strip():
-        return _component("news", label, "ok", "新闻摘要已写入报告")
-    if has_snapshot_news:
-        return _component("news", label, "degraded", "未获取到新闻摘要或新闻搜索无结果")
+    has_retrieval_news = "news_retrieval_content" in context_snapshot
+    has_snapshot_news = has_retrieval_news or "news_content" in context_snapshot
+    news_result_count = context_snapshot.get("news_result_count")
+    if isinstance(news_result_count, int):
+        if news_result_count > 0:
+            return _component(
+                "news",
+                label,
+                "ok",
+                f"新闻检索返回 {news_result_count} 条结果",
+                {"record_count": news_result_count},
+            )
+        return _component("news", label, "degraded", "新闻搜索无结果", {"record_count": 0})
+    if has_snapshot_news and not has_retrieval_news:
+        return _component("news", label, "unknown", "新闻检索未记录原始证据，可能未尝试或未启用")
     return _component("news", label, "unknown", "新闻搜索未记录诊断信息")
 
 
@@ -741,7 +774,7 @@ def build_run_diagnostic_summary(
         status = "failed"
     elif any(component.status in {"failed", "degraded"} for component in components.values()):
         status = "degraded"
-    elif any(component.status == "unknown" for component in components.values()):
+    elif all(component.status == "unknown" for component in components.values()):
         status = "unknown"
     else:
         status = "normal"
@@ -753,9 +786,16 @@ def build_run_diagnostic_summary(
             (
                 component.message
                 for component in components.values()
-                if component.status in {"failed", "degraded"}
+                if component.status == "failed"
             ),
-            _SUMMARY_STATUS_LABELS[status],
+            next(
+                (
+                    component.message
+                    for component in components.values()
+                    if component.status == "degraded"
+                ),
+                _SUMMARY_STATUS_LABELS[status],
+            ),
         )
 
     trace_id = diagnostics.get("trace_id") or snapshot.get("trace_id") or raw.get("trace_id")

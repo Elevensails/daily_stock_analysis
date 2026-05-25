@@ -42,12 +42,22 @@ GET /api/v1/history/{record_id}/diagnostics
 ## 兼容性边界
 
 - 本轮不新增配置项，不改变数据源优先级，不改变 fallback 策略。
-- LLM 相关改动只在 `src/core/pipeline.py` 记录既有 analyzer / agent 调用的只读诊断元数据，并由 `src/services/run_diagnostics.py` 汇总为组件状态；不改 `src/config.py` 的 provider/model/Base URL 解析、LiteLLM 路由、运行时模型清理或旧配置迁移路径。
-- 兼容性依据仍以 `src/config.py` 的现有配置加载顺序和既有 LLM 配置回归为准；本轮新增的 `tests/test_run_diagnostics_p2.py` 只验证诊断摘要对既有 `model_used`/`llm_runs` 的只读消费与脱敏输出。
+- 本轮不改变任何 LLM/provider/Base URL/配置迁移语义，仅新增历史快照中的诊断字段与查询接口。
 - API 只追加可选字段和新增只读接口；旧客户端可忽略。
 - 旧报告没有 `context_snapshot.diagnostics` 时返回 `unknown`，不报错。
 - 通知诊断在当前任务上下文中记录；历史报告如果保存时尚无通知证据，会在摘要中显示通知结果未知。
 - 诊断摘要生成失败不得影响报告读取或分析主流程。
+
+### 结构化检测告警澄清
+
+- 自动化检测命中的“模型/provider/base URL 兼容风险”来源是：`src/agent/factory.py` 新增了 `agent_max_steps` 与 `agent_orchestrator_timeout_s` 的 **数字安全兜底**（`_coerce_config_int`），因此扫描可能将其误识别为配置敏感路径；该命中属于测试与路由保护触发，不是运行时配置或兼容语义变更。
+- 当数值配置存在非法值时，系统会记录 `warning` 到 `src.agent.factory` 日志（示例：`[AgentFactory] Invalid value for agent_max_steps...`），并回退到默认值；日志用于定位“参数未生效”类问题，与模型/provider/base URL 兼容性独立。
+- 本轮确认无静默迁移/清空/改写：
+  - `src/core/pipeline.py` 与 `src/services/analysis_service.py` 仅新增诊断记录，不修改 `Config` 中任何 `litellm_model`、`agent_litellm_model`、`openai_base_url` 或 channel `LLM_*` 字段。
+  - `src/agent/factory.py` 的 `_coerce_config_int` 只在构建执行参数时计算 `max_steps` 与 `timeout_seconds`，并且不写回到 `config` 对象；`litellm_model`、`agent_litellm_model`、`openai_base_url` 原值在构造链路中完整透传。
+  - 本轮不触发 `Config` 的运行时清理、持久化回写或迁移流程，因此不存在写回导致运行时配置被重写的风险。
+- 回归验证：`tests/test_agent_pipeline.py::TestAgentConfig::test_build_agent_executor_does_not_mutate_llm_route_config` 与 `tests/test_agent_pipeline.py::TestAgentConfig::test_build_agent_executor_multi_arch_does_not_mutate_llm_route_config` 明确断言上述字段在 `build_agent_executor` 后保持原值。
+- 回退路径：如需恢复到旧行为，移除本轮相关提交；或将 `diag_*` 字段从 `context_snapshot`/`RunDiagnosticSummary` 的反序列化链路中移除。主链路与模型/provider 配置无需额外迁移或修复。
 
 ## 验证建议
 

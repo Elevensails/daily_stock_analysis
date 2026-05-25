@@ -164,11 +164,17 @@ class AnalysisService:
         diagnostic_context = get_current_diagnostic_context()
         trace_id = diagnostic_context.trace_id if diagnostic_context is not None else query_id
         diagnostic_snapshot = diagnostic_context.snapshot() if diagnostic_context is not None else None
+        diagnostic_context_snapshot = getattr(result, "diagnostic_context_snapshot", None)
+        if isinstance(diagnostic_context_snapshot, dict):
+            context_snapshot = dict(diagnostic_context_snapshot)
+            if diagnostic_snapshot is not None:
+                context_snapshot["diagnostics"] = diagnostic_snapshot
+        elif diagnostic_snapshot is not None:
+            context_snapshot = {"diagnostics": diagnostic_snapshot}
+        else:
+            context_snapshot = None
         diagnostic_summary = build_run_diagnostic_summary(
-            context_snapshot={
-                "diagnostics": diagnostic_snapshot,
-                "news_content": getattr(result, "news_summary", None),
-            },
+            context_snapshot=context_snapshot,
             raw_result=result.to_dict() if hasattr(result, "to_dict") else None,
             report_saved=True,
             query_id=query_id,

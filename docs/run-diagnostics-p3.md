@@ -44,15 +44,15 @@ GET /api/v1/history/{record_id}/diagnostics
 ## 兼容性边界
 
 - 本轮不新增 `.env` 配置项，不修改数据库结构，不引入数据迁移。
-- Web 只消费 Phase 1/2 已追加的可选字段和只读诊断接口；后端补齐 `src/core/pipeline.py`、`src/services/run_diagnostics.py`、`src/storage.py` 的诊断持久化与刷新逻辑，并通过 `api/v1/endpoints/history.py`/`src/services/history_service.py` 提供可读端点。
-- 后端变更范围包含任务编排、历史保存后补写、历史诊断查询与通知结果诊断记录；这些链路只追加诊断快照和摘要，不改变分析主流程、通知发送成败语义或历史报告主体字段。
+- Web 只消费 Phase 1/2 已追加的可选字段和只读诊断接口；后端补齐 `src/core/pipeline.py`、`src/services/run_diagnostics.py`、`src/storage.py` 与 `src/services/history_service.py` 的诊断持久化与刷新逻辑，并通过 `api/v1/endpoints/history.py` 提供可读端点。
+- 后端变更范围包含任务编排、历史保存后补写、历史诊断查询与通知结果诊断记录；这些链路只追加 `context_snapshot.diagnostics` 诊断快照和摘要，不改变分析主流程、通知发送成败语义或历史报告主体字段。
 - 复制文本由后端生成并脱敏；前端只负责展示和复制。
 - Desktop 复用 Web 构建产物，未单独改动 Electron 主进程或打包脚本。
 - 运行时配置/模型/provider/base_url 兼容语义不调整：除诊断持久化链路外，不改 provider 优先级、LiteLLM 路由、运行时清理与配置回退逻辑。
 - 旧历史与旧配置兼容规则不变：历史诊断查询新增可选字段不影响既有历史查询响应解析；回退方式为移除本轮展示与相关前端查询路径，或按现有指南恢复模型和配置。
 - 回滚策略：优先回退前端展示与查询入口；若需完全隔离新增链路，可回滚本轮 PR（回退后保留历史记录原有响应，新增诊断端点不再在 Web 中展示）。
 
-## 兼容性回归与验证
+## 兼容性回归与验证（PR 合并前关键证据）
 
 - 后端回归覆盖：
   - `tests/test_pipeline_market_phase_context.py`
@@ -61,10 +61,12 @@ GET /api/v1/history/{record_id}/diagnostics
   - `tests/test_analysis_api_contract.py`（子集：诊断上下文入出参/状态查询契约）
   - `tests/test_analysis_history.py`（子集：历史 API 与持久化链路）
 - 覆盖关系：API 合约由 `tests/test_analysis_api_contract.py` 与 `tests/test_analysis_history.py` 覆盖；任务编排、历史保存和 `context_snapshot.diagnostics` 由 `tests/test_pipeline_market_phase_context.py` 覆盖；通知路径通过 `./scripts/ci_gate.sh` 中的既有通知回归与导入检查兜底。
-- 回归命令：
+- 回归命令（PR 合并前至少确认全部通过）：
 
 ```bash
+./scripts/ci_gate.sh
 python -m pytest tests/test_realtime_types.py tests/test_scheduler_background.py tests/test_pipeline_market_phase_context.py tests/test_analysis_api_contract.py tests/test_analysis_history.py
+cd apps/dsa-web && npm run lint && npm run build
 ```
 
 ## 验证建议
@@ -75,17 +77,11 @@ npm run lint
 npm run build
 ```
 
-可补充执行：
+可补充执行（非阻断）：
 
 ```bash
 cd apps/dsa-web
 npm test -- --run src/components/report/__tests__/ReportDiagnostics.test.tsx src/components/tasks/__tests__/TaskPanel.test.tsx src/hooks/__tests__/useTaskStream.test.tsx
-```
-
-可选完整后端门禁（当前反馈明确要求）：
-
-```bash
-./scripts/ci_gate.sh
 ```
 
 可补充确定性脚本校验：
