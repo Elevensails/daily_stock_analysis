@@ -106,11 +106,13 @@ class DailyMarketContextService:
     ) -> Optional[DailyMarketContext]:
         normalized_region = _normalize_region(region)
         context_date = target_date or self._today_fn()
+        report_language = normalize_report_language(getattr(config, "report_language", "zh"))
         cache_key = self._cache_key(
             context_date=context_date,
             region=normalized_region,
             current_query_id=current_query_id,
             require_query_id_match=require_query_id_match,
+            report_language=report_language,
         )
 
         if force_refresh:
@@ -138,6 +140,7 @@ class DailyMarketContextService:
                 target_date=context_date,
                 current_query_id=current_query_id,
                 require_query_id_match=require_query_id_match,
+                report_language=report_language,
             )
             if history_context is not None:
                 self._cache[cache_key] = history_context
@@ -154,6 +157,7 @@ class DailyMarketContextService:
                         target_date=context_date,
                         current_query_id=current_query_id,
                         require_query_id_match=require_query_id_match,
+                        report_language=report_language,
                     )
                     if history_context is not None:
                         self._cache[cache_key] = history_context
@@ -175,6 +179,7 @@ class DailyMarketContextService:
                     target_date=context_date,
                     current_query_id=current_query_id,
                     require_query_id_match=require_query_id_match,
+                    report_language=report_language,
                 )
                 if history_context is not None:
                     self._cache[cache_key] = history_context
@@ -202,6 +207,7 @@ class DailyMarketContextService:
         target_date: date,
         current_query_id: Optional[str] = None,
         require_query_id_match: bool = False,
+        report_language: str = "zh",
     ) -> Optional[DailyMarketContext]:
         try:
             history_days = _history_lookup_days(
@@ -235,6 +241,7 @@ class DailyMarketContextService:
                 target_date=target_date,
                 current_query_id=current_query_id,
                 require_query_id_match=require_query_id_match,
+                report_language=report_language,
             ):
                 continue
 
@@ -284,14 +291,20 @@ class DailyMarketContextService:
         region: str,
         current_query_id: Optional[str] = None,
         require_query_id_match: bool = False,
+        report_language: str = "zh",
     ) -> Tuple[Any, ...]:
         if (
             require_query_id_match
             and isinstance(current_query_id, str)
             and current_query_id.strip()
         ):
-            return (context_date, region, current_query_id.strip())
-        return (context_date, region)
+            return (
+                context_date,
+                region,
+                normalize_report_language(report_language),
+                current_query_id.strip(),
+            )
+        return (context_date, region, normalize_report_language(report_language))
 
     def _run_market_review_context(
         self,
@@ -315,6 +328,7 @@ class DailyMarketContextService:
                 target_date=target_date,
                 current_query_id=current_query_id,
                 require_query_id_match=require_query_id_match,
+                report_language=normalize_report_language(getattr(config, "report_language", "zh")),
             )
 
         try:
@@ -601,17 +615,31 @@ def _record_matches_target_date(
     target_date: date,
     current_query_id: Optional[str] = None,
     require_query_id_match: bool = False,
+    report_language: str = "zh",
 ) -> bool:
     payload_date = _payload_trade_date(payload, region)
+    language_matches = _record_report_language_matches(record, report_language)
     if payload_date is not None:
         if require_query_id_match:
-            return _record_matches_query_id(record, current_query_id)
-        return payload_date == target_date or _record_matches_query_id(record, current_query_id)
+            return _record_matches_query_id(record, current_query_id) and language_matches
+        return language_matches and (
+            payload_date == target_date
+            or _record_matches_query_id(record, current_query_id)
+        )
 
     created_date = _coerce_date(getattr(record, "created_at", None))
     if require_query_id_match:
-        return _record_matches_query_id(record, current_query_id)
-    return created_date == target_date or _record_matches_query_id(record, current_query_id)
+        return _record_matches_query_id(record, current_query_id) and language_matches
+    return language_matches and (
+        created_date == target_date or _record_matches_query_id(record, current_query_id)
+    )
+
+
+def _record_report_language_matches(record: Any, report_language: str) -> bool:
+    snapshot = _loads_mapping(getattr(record, "context_snapshot", None))
+    return normalize_report_language(snapshot.get("report_language")) == normalize_report_language(
+        report_language,
+    )
 
 
 def _history_lookup_days(*, target_date: date, today: date) -> int:

@@ -21,6 +21,7 @@ def _history_record(
     region: str = "cn",
     payload_date: str | None = None,
     query_id: str = "market-review-q",
+    report_language: str = "zh",
     summary: str = "市场退潮，高风险，建议观望，仓位上限30%。",
 ) -> SimpleNamespace:
     payload = {
@@ -43,6 +44,7 @@ def _history_record(
         "report_kind": "market_review",
         "market_review_region": region,
         "market_review_payload": payload,
+        "report_language": report_language,
     }
     return SimpleNamespace(
         id=7,
@@ -131,6 +133,52 @@ def test_reuses_same_day_market_review_history_without_running_review() -> None:
     assert "high_risk" in context.risk_tags
     assert "low_position_cap" in context.risk_tags
     run_review.assert_not_called()
+
+
+def test_does_not_reuse_same_day_history_on_report_language_mismatch() -> None:
+    db = MagicMock()
+    db.get_analysis_history.return_value = [
+        _history_record(
+            created_at=datetime(2026, 6, 6, 9, 30),
+            report_language="en",
+            summary="Market in risk-off retreat, suggest waiting.",
+        )
+    ]
+    service = DailyMarketContextService(
+        db_manager=db,
+        today_fn=lambda: date(2026, 6, 6),
+    )
+    result = MarketReviewRunResult(
+        report="大盘退潮，高风险，建议观望，仓位上限30%。",
+        market_review_payload={
+            "kind": "market_review",
+            "region": "cn",
+            "sections": [
+                {
+                    "key": "overview",
+                    "title": "概览",
+                    "markdown": "大盘退潮，高风险，建议观望，仓位上限30%。",
+                }
+            ],
+        },
+    )
+
+    with patch(
+        "src.services.daily_market_context.run_market_review",
+        return_value=result,
+    ) as run_review:
+        context = service.get_context(
+            region="cn",
+            config=SimpleNamespace(report_language="zh"),
+            notifier=MagicMock(),
+            analyzer=MagicMock(),
+            search_service=MagicMock(),
+        )
+
+    assert context is not None
+    assert context.source == "market_review_runtime"
+    assert context.summary == "大盘退潮，高风险，建议观望，仓位上限30%。"
+    run_review.assert_called_once()
 
 
 def test_force_refresh_reads_latest_same_day_history_after_stale_cache() -> None:
