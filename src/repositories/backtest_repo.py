@@ -541,6 +541,7 @@ class BacktestRepository:
             padded,
             f"HK{unpadded}",
             f"{unpadded}.HK",
+            f"HK.{padded}",
         ]
         if unpadded == padded:
             variants.pop(3)
@@ -549,6 +550,7 @@ class BacktestRepository:
         # Keep legacy no-leading-zero bare form for 1-3 digit inputs.
         if len(unpadded) <= 3 and unpadded != padded:
             variants.append(unpadded)
+            variants.append(f"HK.{unpadded}")
 
         return variants
 
