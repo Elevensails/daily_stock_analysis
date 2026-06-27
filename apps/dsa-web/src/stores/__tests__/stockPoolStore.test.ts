@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { analysisApi, DuplicateTaskError } from '../../api/analysis';
 import { historyApi } from '../../api/history';
-import type { HistoryListResponse, TaskInfo, TaskListResponse } from '../../types/analysis';
+import type { AnalysisReport, HistoryListResponse, TaskInfo, TaskListResponse } from '../../types/analysis';
 import { getRecentStartDate, getTodayInShanghai } from '../../utils/format';
 import { useStockPoolStore } from '../stockPoolStore';
 
@@ -824,7 +824,7 @@ describe('stockPoolStore', () => {
       createdAt: '2026-03-18T09:00:00Z',
     };
     const completedRefreshResponse = createDeferred<HistoryListResponse>();
-    const userSelectionDetail = createDeferred<unknown>();
+    const userSelectionDetail = createDeferred<AnalysisReport>();
     const userSelectionReport = {
       ...historyReport,
       meta: {
