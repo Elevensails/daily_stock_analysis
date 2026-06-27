@@ -3055,6 +3055,48 @@ class SystemConfigServiceTestCase(unittest.TestCase):
         self.assertEqual(restored_map["VISION_MODEL"], pre_clear_map["VISION_MODEL"])
         self.assertEqual(restored_map["LITELLM_FALLBACK_MODELS"], pre_clear_map["LITELLM_FALLBACK_MODELS"])
 
+    def test_import_desktop_env_restores_provider_and_base_url_after_provider_cleanup(self) -> None:
+        self._rewrite_env(
+            "STOCK_LIST=600519,000001",
+            "LITELLM_MODEL=openai/gpt-4o-mini",
+            "OPENAI_MODEL=gpt-4.1",
+            "OPENAI_BASE_URL=https://openai.example.com/v1",
+            "OPENAI_API_KEY=legacy-openai-key",
+        )
+
+        backup_content = self.service.export_desktop_env()["content"]
+        pre_clear_map = dict(self.manager.read_config_map())
+
+        clear_response = self.service.update(
+            config_version=self.manager.get_config_version(),
+            items=[
+                {"key": "LITELLM_MODEL", "value": ""},
+                {"key": "OPENAI_MODEL", "value": ""},
+                {"key": "OPENAI_BASE_URL", "value": ""},
+                {"key": "OPENAI_API_KEY", "value": ""},
+            ],
+            reload_now=False,
+        )
+        self.assertTrue(clear_response["success"])
+
+        cleared_map = self.manager.read_config_map()
+        self.assertEqual(cleared_map["LITELLM_MODEL"], "")
+        self.assertEqual(cleared_map["OPENAI_MODEL"], "")
+        self.assertEqual(cleared_map["OPENAI_BASE_URL"], "")
+        self.assertEqual(cleared_map["OPENAI_API_KEY"], "")
+
+        restore_payload = self.service.import_desktop_env(
+            config_version=self.manager.get_config_version(),
+            content=backup_content,
+            reload_now=False,
+        )
+        self.assertTrue(restore_payload["success"])
+
+        restored_map = self.manager.read_config_map()
+        self.assertEqual(restored_map["LITELLM_MODEL"], pre_clear_map["LITELLM_MODEL"])
+        self.assertEqual(restored_map["OPENAI_MODEL"], pre_clear_map["OPENAI_MODEL"])
+        self.assertEqual(restored_map["OPENAI_BASE_URL"], pre_clear_map["OPENAI_BASE_URL"])
+        self.assertEqual(restored_map["OPENAI_API_KEY"], pre_clear_map["OPENAI_API_KEY"])
 
     def test_validate_rejects_comma_only_api_key(self) -> None:
         """Whitespace/comma-only api_key must fail validation (P2: parsed-segment check)."""
