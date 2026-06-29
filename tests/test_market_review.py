@@ -615,7 +615,13 @@ class MarketReviewLocalizationTestCase(unittest.TestCase):
         markdown = market_review_module._render_market_review_payload_markdown(
             {
                 "language": "zh",
-                "markdown_report": "## A 股大盘\n\n今日震荡。\n\n---\n\n## 港股大盘\n\n今日反弹。",
+                "markdown_report": (
+                    "## A 股大盘\n\n今日震荡。\n\n"
+                    "---\n\n"
+                    "## 港股大盘\n\n今日反弹。\n\n"
+                    "---\n\n"
+                    "## 美股大盘\n\n科技走强。"
+                ),
                 "markets": {
                     "cn": {
                         "title": "A 股大盘",
@@ -627,6 +633,11 @@ class MarketReviewLocalizationTestCase(unittest.TestCase):
                         "language": "zh",
                         "sectors": {"top": [{"name": "科技", "change_pct": 2.18}]},
                     },
+                    "us": {
+                        "title": "美股大盘",
+                        "language": "zh",
+                        "sectors": {"top": [{"name": "半导体", "change_pct": 1.86}]},
+                    },
                 },
             }
         )
@@ -635,6 +646,10 @@ class MarketReviewLocalizationTestCase(unittest.TestCase):
         self.assertIn("| 1 | AI算力 | +3.25% |", markdown)
         self.assertIn("### 港股大盘 / 板块主线", markdown)
         self.assertIn("| 1 | 科技 | +2.18% |", markdown)
+        self.assertIn("### 美股大盘 / 板块主线", markdown)
+        self.assertIn("| 1 | 半导体 | +1.86% |", markdown)
+        self.assertLess(markdown.index("### A 股大盘 / 板块主线"), markdown.index("## 港股大盘"))
+        self.assertLess(markdown.index("### 港股大盘 / 板块主线"), markdown.index("## 美股大盘"))
 
     def test_render_market_review_payload_markdown_checks_duplicate_titles_by_market_wrapper(self) -> None:
         duplicate_title = "2026-06-03 大盘复盘"
