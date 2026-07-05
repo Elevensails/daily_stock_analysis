@@ -519,6 +519,79 @@ describe('HomePage', () => {
     expect(await screen.findByRole('button', { name: /Apple/ })).toBeInTheDocument();
   });
 
+  it('keeps pending watchlist submission disabled while fallback history lookup is unresolved', async () => {
+    const todayInShanghai = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai' }).format(new Date());
+    let resolveAaplHistory!: (response: Awaited<ReturnType<typeof historyApi.getList>>) => void;
+    const aaplHistoryPromise = new Promise<Awaited<ReturnType<typeof historyApi.getList>>>((resolve) => {
+      resolveAaplHistory = resolve;
+    });
+
+    vi.mocked(systemConfigApi.getWatchlist).mockResolvedValue(['AAPL']);
+    vi.mocked(historyApi.getStockBarList).mockResolvedValue({
+      total: 1,
+      items: [{
+        id: 11,
+        stockCode: '600519',
+        stockName: '贵州茅台',
+        reportType: 'detailed',
+        sentimentScore: 72,
+        operationAdvice: '观察',
+        analysisCount: 2,
+        lastAnalysisTime: `${todayInShanghai}T22:00:00`,
+      }],
+    });
+    vi.mocked(historyApi.getList).mockImplementation((params: { stockCode?: string; limit?: number } = {}) => {
+      if (params.stockCode === 'AAPL') {
+        return aaplHistoryPromise;
+      }
+
+      return Promise.resolve({
+        total: 0,
+        page: 1,
+        limit: params.limit ?? 20,
+        items: [],
+      });
+    });
+
+    render(
+      <MemoryRouter>
+        <HomePage />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: '自选' }));
+
+    await waitFor(() => {
+      expect(historyApi.getList).toHaveBeenCalledWith({ stockCode: 'AAPL', limit: 1 });
+    });
+    expect(await screen.findByLabelText('确认今日状态中')).toBeInTheDocument();
+
+    const analyzePendingButton = screen.getByRole('button', { name: '仅未分析' });
+    expect(analyzePendingButton).toBeDisabled();
+    fireEvent.click(analyzePendingButton);
+    expect(analysisApi.analyzeAsync).not.toHaveBeenCalled();
+
+    await act(async () => {
+      resolveAaplHistory({
+        total: 1,
+        page: 1,
+        limit: 1,
+        items: [{
+          id: 12,
+          queryId: 'q-aapl',
+          stockCode: 'AAPL',
+          stockName: 'Apple',
+          reportType: 'detailed',
+          sentimentScore: 68,
+          operationAdvice: '中性',
+          createdAt: `${todayInShanghai}T09:20:00`,
+        }],
+      });
+      await aaplHistoryPromise;
+    });
+    expect(await screen.findByLabelText('今日已分析')).toBeInTheDocument();
+  });
+
   it('removes the MARKET stock bar item after deleting market review history', async () => {
     let isMarketReviewDeleted = false;
     vi.mocked(historyApi.getStockBarList).mockResolvedValue({

@@ -5,6 +5,7 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock3,
+  Loader2,
   Play,
   Plus,
   Star,
@@ -28,6 +29,7 @@ export interface HomeWatchlistRow {
   code: string;
   latestItem?: StockBarItem;
   analyzedToday: boolean;
+  isTodayStatusLoading?: boolean;
   activeTask?: TaskInfo;
 }
 
@@ -120,7 +122,9 @@ const WatchlistRowItem: React.FC<{
             <span className="truncate text-sm font-semibold text-foreground">
               {truncateStockName(stockName)}
             </span>
-            {row.analyzedToday ? (
+            {row.isTodayStatusLoading ? (
+              <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-text" aria-label={t('watchlist.todayStatusLoading')} />
+            ) : row.analyzedToday ? (
               <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-success" aria-label={t('watchlist.analyzedToday')} />
             ) : (
               <Clock3 className="h-3.5 w-3.5 shrink-0 text-muted-text" aria-label={t('watchlist.notAnalyzedToday')} />
@@ -213,7 +217,8 @@ export const HomeStockWorkspace: React.FC<HomeStockWorkspaceProps> = ({
 }) => {
   const { t } = useUiLanguage();
   const [draftCode, setDraftCode] = useState('');
-  const pendingWatchlistCount = Math.max(0, watchlistRows.length - watchlistAnalyzedTodayCount);
+  const pendingWatchlistCount = watchlistRows.filter((row) => !row.analyzedToday && !row.isTodayStatusLoading).length;
+  const isTodayStatusLoading = watchlistRows.some((row) => row.isTodayStatusLoading);
   const topTodayItem = todayItems[0];
   const tabs: Array<{ key: HomeWorkspaceTab; label: string }> = [
     { key: 'history', label: t('watchlist.tabHistory') },
@@ -317,7 +322,7 @@ export const HomeStockWorkspace: React.FC<HomeStockWorkspaceProps> = ({
                 size="sm"
                 variant="home-action-report"
                 className="whitespace-nowrap px-2 text-xs"
-                disabled={pendingWatchlistCount === 0 || isBatchAnalyzing}
+                disabled={pendingWatchlistCount === 0 || isTodayStatusLoading || isBatchAnalyzing}
                 onClick={() => void onAnalyzeWatchlist('pending')}
               >
                 <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
