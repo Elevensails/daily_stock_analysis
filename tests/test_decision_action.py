@@ -62,6 +62,9 @@ from src.schemas.decision_scale import (
         ("规避买入", "avoid"),
         ("规避卖出", "avoid"),
         ("回避减仓", "avoid"),
+        ("回避加仓", "avoid"),
+        ("规避增持", "avoid"),
+        ("回避建仓", "avoid"),
         ("do not buy", "avoid"),
         ("회피", "avoid"),
         ("alert", "alert"),
@@ -210,9 +213,18 @@ def test_build_action_fields_prioritizes_negated_buy_advice_over_embedded_buy_ph
     }
 
 
-def test_build_action_fields_keeps_compound_no_separator_avoid_buy_with_score_alignment() -> None:
+@pytest.mark.parametrize(
+    "advice",
+    [
+        "回避买入",
+        "回避加仓",
+        "规避增持",
+        "回避建仓",
+    ],
+)
+def test_build_action_fields_keeps_compound_no_separator_avoid_guard_with_score_alignment(advice: str) -> None:
     assert build_action_fields(
-        operation_advice="回避买入",
+        operation_advice=advice,
         sentiment_score=90,
         align_with_score=True,
     ) == {
