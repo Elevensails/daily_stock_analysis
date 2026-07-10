@@ -525,13 +525,15 @@ def display_operation_advice_for_result(
 ) -> str:
     """Return the report-facing operation advice for an AnalysisResult-like object."""
 
-    return display_operation_advice(
-        **_display_result_kwargs(
-            result,
-            report_language=report_language,
-            report_type=report_type,
-        )
+    language = report_language or getattr(result, "report_language", "zh")
+    fields = display_action_fields_for_result(
+        result,
+        report_language=language,
+        report_type=report_type,
     )
+    if fields["action_label"]:
+        return fields["action_label"]
+    return localize_operation_advice(getattr(result, "operation_advice", None), language)
 
 
 def display_action_fields_for_result(
@@ -542,13 +544,23 @@ def display_action_fields_for_result(
 ) -> DecisionActionFields:
     """Return display action fields for an AnalysisResult-like object."""
 
-    return display_action_fields(
+    fields = display_action_fields(
         **_display_result_kwargs(
             result,
             report_language=report_language,
             report_type=report_type,
         )
     )
+    resolved_report_type = report_type or getattr(result, "report_type", None)
+    if fields["action"] is None and str(resolved_report_type or "").strip().lower() not in _NON_STOCK_REPORT_TYPES:
+        legacy_action = _legacy_decision_type_for_result(result)
+        if legacy_action:
+            language = report_language or getattr(result, "report_language", "zh")
+            return {
+                "action": legacy_action,
+                "action_label": localize_action_label(legacy_action, language),
+            }
+    return fields
 
 
 def decision_type_for_action(action: Any) -> str:
