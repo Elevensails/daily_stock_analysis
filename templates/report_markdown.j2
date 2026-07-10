@@ -215,7 +215,19 @@
 | {{ labels.time_label }} | {{ labels.score_label }} | {{ labels.advice_label }} | {{ labels.trend_label }} |
 |------|------|------|------|
 {% for h in hist %}
-| {{ h.created_at[:16] if h.created_at else 'N/A' }} | {{ h.sentiment_score or 'N/A' }} | {{ get_signal_level(localize_action_label(h.action, report_language) or localize_action_label(h.action_label, report_language) or localize_operation_advice(h.operation_advice or 'N/A', report_language), h.sentiment_score, report_language)[0] }} | {{ localize_trend_prediction(h.trend_prediction or 'N/A', report_language) }} |
+{% set signal_from_action_label = None %}
+{% if h.action_label %}
+{% set signal_from_action_label = get_signal_level(h.action_label, h.sentiment_score, report_language) %}
+{% endif %}
+{% set signal_advice = signal_from_action_label[2] in ["strong_buy", "strong_sell"] if signal_from_action_label else None %}
+{% if h.action and signal_advice %}
+{% set signal_source = h.action_label %}
+{% elif h.action %}
+{% set signal_source = localize_action_label(h.action, report_language) %}
+{% else %}
+{% set signal_source = h.action_label %}
+{% endif %}
+| {{ h.created_at[:16] if h.created_at else 'N/A' }} | {{ h.sentiment_score or 'N/A' }} | {{ get_signal_level(signal_source or localize_action_label(h.action, report_language) or localize_operation_advice(h.operation_advice or 'N/A', report_language), h.sentiment_score, report_language)[0] }} | {{ localize_trend_prediction(h.trend_prediction or 'N/A', report_language) }} |
 {% endfor %}
 {% endif %}
 
