@@ -20,6 +20,9 @@ const githubRunUrl = (() => {
   }
   return `${server}/${repository}/actions/runs/${runId}`;
 })();
+const githubArtifactsUrl = githubRunUrl
+  ? `${githubRunUrl}#artifacts`
+  : null;
 
 function artifactNote(): string[] {
   if (!githubRunUrl) {
@@ -29,14 +32,19 @@ function artifactNote(): string[] {
       'cd apps/dsa-web',
       'DSA_WEB_VISUAL_EVIDENCE=1 npx playwright test e2e/market-structure-card-visual.spec.ts',
       '```',
+      '',
+      '产物文件（CI 之外）：',
+      '- `apps/dsa-web/test-results/market-structure-card-desktop.png`',
+      '- `apps/dsa-web/test-results/market-structure-card-visual-evidence.md`（建议直接粘到 PR 描述）',
     ];
   }
 
   return [
-    'GitHub Actions 运行链接（含该测试截图附件）：',
+    'GitHub Actions 运行链接（含该测试附件）：',
     `- ${githubRunUrl}`,
-    '- 在该页面的 Artifacts/Uploads 区域下载 `market-structure-card-visual` 相关打包产物',
-    '- 目标目录：`apps/dsa-web/test-results/market-structure-card-visual`',
+    `- Artifacts 区域（或直接访问）：${githubArtifactsUrl}`,
+    '- 建议在该 run 的 PR 描述/评论中附 `market-structure-card-visual-evidence.md` 或截图附件',
+    '- 产物目录：`apps/dsa-web/test-results/market-structure-card-visual`',
   ];
 }
 
