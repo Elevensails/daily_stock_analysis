@@ -25,6 +25,7 @@ from src.schemas.decision_scale import (
     [
         ("strong_buy", "buy"),
         ("强烈买入", "buy"),
+        ("적극 매수", "buy"),
         ("买入", "buy"),
         ("布局", "buy"),
         ("建仓", "buy"),
@@ -668,6 +669,15 @@ def test_display_action_fields_preserves_strong_buy_label_for_explicit_advice() 
         "action_label": "Strong Buy",
     }
 
+    assert display_action_fields(
+        operation_advice="적극 매수",
+        sentiment_score=72,
+        report_language="ko",
+    ) == {
+        "action": "buy",
+        "action_label": "적극 매수",
+    }
+
 
 def test_display_action_fields_prefers_strong_buy_action_label_when_explicit_label_supplied() -> None:
     assert display_action_fields(
@@ -678,6 +688,15 @@ def test_display_action_fields_prefers_strong_buy_action_label_when_explicit_lab
     ) == {
         "action": "buy",
         "action_label": "强烈买入",
+    }
+
+    assert display_action_fields(
+        action_label="적극 매수",
+        sentiment_score=72,
+        report_language="ko",
+    ) == {
+        "action": "buy",
+        "action_label": "적극 매수",
     }
 
 

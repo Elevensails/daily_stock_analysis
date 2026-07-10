@@ -51,6 +51,7 @@ _LOCALIZED_EXPLICIT_ALIASES: Dict[str, DecisionAction] = {
 _EXPLICIT_ALIASES: Dict[str, DecisionAction] = {
     **_LOCALIZED_EXPLICIT_ALIASES,
     "strong buy": "buy",
+    "적극 매수": "buy",
     "accumulate": "add",
     "trim": "reduce",
     "strong sell": "sell",
