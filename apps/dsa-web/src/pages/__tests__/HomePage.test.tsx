@@ -6,6 +6,7 @@ import { agentApi } from '../../api/agent';
 import { historyApi } from '../../api/history';
 import { systemConfigApi } from '../../api/systemConfig';
 import { UiLanguageProvider } from '../../contexts/UiLanguageContext';
+import { useTaskStream } from '../../hooks/useTaskStream';
 import { useStockPoolStore } from '../../stores';
 import type { RunFlowSnapshot } from '../../types/runFlow';
 import { getReportText, normalizeReportLanguage } from '../../utils/reportLanguage';
@@ -822,6 +823,83 @@ describe('HomePage', () => {
     fireEvent.click(await screen.findByRole('button', { name: '今日' }));
 
     expect(await screen.findByText('今日排行加载失败')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Apple/ })).not.toBeInTheDocument();
+  });
+
+  it('refreshes the Today ranking after a stock analysis task completes', async () => {
+    const todayInShanghai = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai' }).format(new Date());
+    let taskCompleted = false;
+    vi.mocked(historyApi.getStockBarList).mockImplementation(() => Promise.resolve({
+      total: 1,
+      items: [{
+        id: taskCompleted ? 12 : 11,
+        stockCode: taskCompleted ? 'NVDA' : 'AAPL',
+        stockName: taskCompleted ? 'NVIDIA' : 'Apple',
+        reportType: 'detailed',
+        sentimentScore: taskCompleted ? 93 : 72,
+        operationAdvice: taskCompleted ? '买入' : '观察',
+        analysisCount: 1,
+        lastAnalysisTime: `${todayInShanghai}T${taskCompleted ? '11' : '10'}:00:00`,
+      }],
+    }));
+    vi.mocked(historyApi.getList).mockImplementation((params: {
+      startDate?: string;
+      endDate?: string;
+      page?: number;
+      limit?: number;
+    } = {}) => {
+      if (params.startDate === todayInShanghai && params.endDate === todayInShanghai) {
+        return Promise.resolve({
+          total: 1,
+          page: 1,
+          limit: 100,
+          items: [{
+            id: taskCompleted ? 12 : 11,
+            queryId: taskCompleted ? 'q-nvda-today' : 'q-aapl-today',
+            stockCode: taskCompleted ? 'NVDA' : 'AAPL',
+            stockName: taskCompleted ? 'NVIDIA' : 'Apple',
+            reportType: 'detailed' as const,
+            sentimentScore: taskCompleted ? 93 : 72,
+            operationAdvice: taskCompleted ? '买入' : '观察',
+            createdAt: `${todayInShanghai}T${taskCompleted ? '11' : '10'}:00:00`,
+          }],
+        });
+      }
+
+      return Promise.resolve({
+        total: 0,
+        page: params.page ?? 1,
+        limit: params.limit ?? 20,
+        items: [],
+      });
+    });
+
+    render(
+      <MemoryRouter>
+        <HomePage />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: '今日' }));
+    expect(await screen.findByRole('button', { name: /Apple/ })).toBeInTheDocument();
+
+    const taskStreamOptions = vi.mocked(useTaskStream).mock.calls.at(-1)?.[0];
+    expect(taskStreamOptions).toBeDefined();
+    taskCompleted = true;
+    act(() => {
+      taskStreamOptions?.onTaskCompleted?.({
+        taskId: 'task-nvda',
+        stockCode: 'NVDA',
+        stockName: 'NVIDIA',
+        status: 'completed',
+        progress: 100,
+        reportType: 'detailed',
+        createdAt: `${todayInShanghai}T10:59:00`,
+        completedAt: `${todayInShanghai}T11:00:00`,
+      });
+    });
+
+    expect(await screen.findByRole('button', { name: /NVIDIA/ })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Apple/ })).not.toBeInTheDocument();
   });
 

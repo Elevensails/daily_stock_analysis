@@ -194,6 +194,7 @@ const HomePage: React.FC = () => {
   const [todayHistoryItems, setTodayHistoryItems] = useState<StockBarItem[]>([]);
   const [isLoadingTodayAnalysisItems, setIsLoadingTodayAnalysisItems] = useState(false);
   const [todayAnalysisLoadFailed, setTodayAnalysisLoadFailed] = useState(false);
+  const [todayAnalysisRefreshVersion, setTodayAnalysisRefreshVersion] = useState(0);
   const [isStockBarInitialLoadSettled, setIsStockBarInitialLoadSettled] = useState(false);
   const duplicateBannerTimer = useRef<number | null>(null);
   const marketReviewPollTimer = useRef<number | null>(null);
@@ -495,6 +496,12 @@ const HomePage: React.FC = () => {
     return requiredNeedsAction.slice(0, 3).join(uiLanguage === 'en' ? ', ' : '、');
   }, [setupStatus, uiLanguage]);
 
+  const handleCompletedTaskDataRefreshed = useCallback((task: TaskInfo) => {
+    if (task.reportType !== 'market_review') {
+      setTodayAnalysisRefreshVersion((version) => version + 1);
+    }
+  }, []);
+
   useDashboardLifecycle({
     loadInitialHistory,
     refreshHistory,
@@ -508,6 +515,7 @@ const HomePage: React.FC = () => {
     syncTaskFailed,
     refreshActiveTasks,
     removeTask,
+    onCompletedTaskDataRefreshed: handleCompletedTaskDataRefreshed,
   });
 
   useEffect(() => {
@@ -926,7 +934,7 @@ const HomePage: React.FC = () => {
     return () => {
       active = false;
     };
-  }, [sidebarWorkspaceTab, todayDateKey]);
+  }, [sidebarWorkspaceTab, todayAnalysisRefreshVersion, todayDateKey]);
 
   const activeTaskByCode = useMemo(() => {
     const tasksByCode = new Map<string, TaskInfo>();
