@@ -89,6 +89,11 @@ from src.schemas.decision_scale import (
         ("경고, 보유", "alert"),
         ("경고, 매수", "buy"),
         ("risk alert, avoid buying", "avoid"),
+        ("avoid buy", "avoid"),
+        ("avoid sell", "avoid"),
+        ("avoid add", "avoid"),
+        ("avoid strong buy", "avoid"),
+        ("avoid strong sell", "avoid"),
     ],
 )
 def test_normalize_decision_action_matrix(value: str, expected: str) -> None:
@@ -253,6 +258,25 @@ def test_build_action_fields_prioritizes_negated_buy_advice_over_embedded_buy_ph
     ],
 )
 def test_build_action_fields_keeps_compound_no_separator_avoid_guard_with_score_alignment(advice: str) -> None:
+    assert build_action_fields(
+        operation_advice=advice,
+        sentiment_score=90,
+        align_with_score=True,
+    ) == {
+        "action": "avoid",
+        "action_label": "回避",
+    }
+
+
+@pytest.mark.parametrize(
+    "advice",
+    [
+        "avoid buy",
+        "avoid sell",
+        "avoid add",
+    ],
+)
+def test_build_action_fields_keeps_naked_avoid_english_action(advice: str) -> None:
     assert build_action_fields(
         operation_advice=advice,
         sentiment_score=90,

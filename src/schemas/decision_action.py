@@ -258,6 +258,7 @@ _ENGLISH_NEGATED_ACTION_TERMS: Dict[DecisionAction, tuple[str, ...]] = {
     "hold": ("add", "accumulate", "sell", "strong sell", "reduce", "trim"),
 }
 _ENGLISH_AVOIDED_HOLD_ACTION_TERMS = ("adding", "accumulating", "selling", "reducing", "trimming")
+_ENGLISH_AVOID_GUARD_ACTION_TERMS = ("buy", "strong buy", "add", "accumulate", "sell", "strong sell")
 _ENGLISH_DEFERRED_ACTION_TERMS = ("buy", "add", "accumulate", "sell", "reduce", "trim")
 _FINANCIAL_COMPOUND_SENTINEL = "financialcompound"
 _ACTION_SEGMENT_SPLIT_RE = re.compile(r"[/,，;；、|]+")
@@ -319,6 +320,11 @@ def _english_negated_action_matches(text: str) -> set[DecisionAction]:
 
 def _has_english_avoided_hold_action(text: str) -> bool:
     terms = "|".join(re.escape(term) for term in _ENGLISH_AVOIDED_HOLD_ACTION_TERMS)
+    return bool(re.search(rf"(?<![a-z0-9_])avoid\s+(?:{terms})(?![a-z0-9_])", text))
+
+
+def _has_english_avoid_guard_action(text: str) -> bool:
+    terms = "|".join(re.escape(term) for term in _ENGLISH_AVOID_GUARD_ACTION_TERMS)
     return bool(re.search(rf"(?<![a-z0-9_])avoid\s+(?:{terms})(?![a-z0-9_])", text))
 
 
@@ -420,6 +426,9 @@ def normalize_decision_action(value: Any) -> Optional[DecisionAction]:
 
     if _has_english_deferred_action(text):
         return None
+
+    if _has_english_avoid_guard_action(text):
+        return "avoid"
 
     compound_guard_action = _resolve_compound_guard_action(text)
     if compound_guard_action is not None:
