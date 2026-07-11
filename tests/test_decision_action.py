@@ -92,6 +92,8 @@ from src.schemas.decision_scale import (
         ("avoid buy", "avoid"),
         ("avoid sell", "avoid"),
         ("avoid add", "avoid"),
+        ("avoid reduce", "avoid"),
+        ("avoid trim", "avoid"),
         ("avoid strong buy", "avoid"),
         ("avoid strong sell", "avoid"),
     ],
@@ -274,6 +276,8 @@ def test_build_action_fields_keeps_compound_no_separator_avoid_guard_with_score_
         "avoid buy",
         "avoid sell",
         "avoid add",
+        "avoid reduce",
+        "avoid trim",
     ],
 )
 def test_build_action_fields_keeps_naked_avoid_english_action(advice: str) -> None:

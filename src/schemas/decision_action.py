@@ -263,7 +263,16 @@ _ENGLISH_NEGATED_ACTION_TERMS: Dict[DecisionAction, tuple[str, ...]] = {
     "hold": ("add", "accumulate", "sell", "strong sell", "reduce", "trim"),
 }
 _ENGLISH_AVOIDED_HOLD_ACTION_TERMS = ("adding", "accumulating", "selling", "reducing", "trimming")
-_ENGLISH_AVOID_GUARD_ACTION_TERMS = ("buy", "strong buy", "add", "accumulate", "sell", "strong sell")
+_ENGLISH_AVOID_GUARD_ACTION_TERMS = (
+    "buy",
+    "strong buy",
+    "add",
+    "accumulate",
+    "sell",
+    "strong sell",
+    "reduce",
+    "trim",
+)
 _ENGLISH_DEFERRED_ACTION_TERMS = ("buy", "add", "accumulate", "sell", "reduce", "trim")
 _FINANCIAL_COMPOUND_SENTINEL = "financialcompound"
 _ACTION_SEGMENT_SPLIT_RE = re.compile(r"[/,，;；、|]+")
