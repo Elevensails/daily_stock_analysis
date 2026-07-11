@@ -30,7 +30,7 @@ for optional_module in ("litellm", "json_repair"):
         sys.modules[optional_module] = mock.MagicMock()
 
 from src.config import Config
-from src.notification import NotificationService, NotificationChannel
+from src.notification import NotificationBuilder, NotificationChannel, NotificationService
 from src.notification_noise import reset_notification_noise_state
 from src.analyzer import AnalysisResult
 from bot.models import BotMessage, ChatType
@@ -667,6 +667,7 @@ class TestNotificationServiceReportGeneration(unittest.TestCase):
         cases = [
             ("avoid", "Avoid", 90, ("Avoid", "🟡", "hold")),
             ("add", "Add", 50, ("Add", "🟢", "buy")),
+            ("alert", "Alert", 85, ("Alert", "🔴", "sell")),
         ]
 
         for action, action_label, score, expected in cases:
@@ -683,6 +684,48 @@ class TestNotificationServiceReportGeneration(unittest.TestCase):
                 )
 
                 self.assertEqual(service._get_signal_level(result), expected)
+
+    def test_build_stock_summary_uses_resolved_eight_state_action(self):
+        summary = NotificationBuilder.build_stock_summary(
+            [
+                AnalysisResult(
+                    code="AVOID",
+                    name="Avoid Corp",
+                    sentiment_score=90,
+                    trend_prediction="Neutral",
+                    operation_advice="Avoid",
+                    report_language="en",
+                    action="avoid",
+                    action_label="Avoid",
+                ),
+                AnalysisResult(
+                    code="ALERT",
+                    name="Alert Corp",
+                    sentiment_score=85,
+                    trend_prediction="Neutral",
+                    operation_advice="Alert",
+                    report_language="en",
+                    action="alert",
+                    action_label="Alert",
+                ),
+                AnalysisResult(
+                    code="ADD",
+                    name="Add Corp",
+                    sentiment_score=50,
+                    trend_prediction="Neutral",
+                    operation_advice="Add",
+                    report_language="en",
+                    action="add",
+                    action_label="Add",
+                ),
+            ]
+        )
+
+        self.assertIn("🟡 Avoid Corp(AVOID): Avoid | Score 90", summary)
+        self.assertIn("🔴 Alert Corp(ALERT): Alert | Score 85", summary)
+        self.assertIn("🟢 Add Corp(ADD): Add | Score 50", summary)
+        self.assertNotIn("Buy | Score 50", summary)
+        self.assertNotIn("Strong Buy", summary)
 
     @mock.patch("src.notification.get_config")
     def test_report_rows_and_summary_use_same_score_aligned_action(

@@ -2831,14 +2831,32 @@ class NotificationBuilder:
         lines = [f"📊 **{labels['summary_heading']}**", ""]
 
         for r in sorted(results, key=lambda x: x.sentiment_score, reverse=True):
+            display_action = display_action_fields_for_result(
+                r,
+                report_language=report_language,
+            )["action"]
+            signal_action = {
+                "buy": "buy",
+                "add": "buy",
+                "hold": "hold",
+                "reduce": "reduce",
+                "sell": "sell",
+                "watch": "watch",
+                "avoid": "hold",
+                "alert": "sell",
+            }.get(display_action)
             display_advice = display_operation_advice_for_result(
                 r,
                 report_language=report_language,
             )
-            signal_text, emoji, _ = get_signal_level(display_advice, r.sentiment_score, report_language)
+            signal_text, emoji, _ = get_signal_level(
+                signal_action or display_advice,
+                r.sentiment_score,
+                report_language,
+            )
             name = get_localized_stock_name(r.name, r.code, report_language)
             lines.append(
-                f"{emoji} {name}({r.code}): {signal_text} | "
+                f"{emoji} {name}({r.code}): {display_advice} | "
                 f"{labels['score_label']} {r.sentiment_score}"
             )
 
