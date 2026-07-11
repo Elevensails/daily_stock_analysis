@@ -255,12 +255,15 @@ async function renderMarketStructureCard(distIndexPath: string, testInfo: TestIn
     const githubServer = process.env.GITHUB_SERVER_URL || 'https://github.com';
     const githubRepository = process.env.GITHUB_REPOSITORY;
     const githubRunId = process.env.GITHUB_RUN_ID;
+    const artifactName = 'market-structure-card-visual';
     const artifactRunHint = githubRepository && githubRunId
       ? `${githubServer}/${githubRepository}/actions/runs/${githubRunId}`
       : 'Unavailable (not running in GitHub Actions)';
+    const artifactDownloadHint = githubRunId
+      ? `gh run download ${githubRunId} --name ${artifactName} --dir ./.market-structure-card-visual`
+      : '';
     const reproductionCommand = 'cd apps/dsa-web && npx playwright test e2e/market-structure-card-visual.spec.ts';
     const artifactHint = `${artifactRunHint}/artifacts`;
-    const artifactName = 'market-structure-card-visual';
     const externalEvidenceDir = process.env.DSA_WEB_VISUAL_EVIDENCE
       ? path.resolve(process.env.DSA_WEB_VISUAL_EVIDENCE)
       : '';
@@ -286,6 +289,9 @@ async function renderMarketStructureCard(distIndexPath: string, testInfo: TestIn
       `Playwright attachment name (artifact evidence): ${artifactName}`,
       `Repro command: ${reproductionCommand}`,
     ];
+    if (artifactDownloadHint) {
+      evidenceNotes.push(`If running in GitHub Actions, download artifacts by command: ${artifactDownloadHint}`);
+    }
     if (externalEvidenceUrl) {
       evidenceNotes.push(`External visual evidence URL: ${externalEvidenceUrl}`);
     }
@@ -293,11 +299,13 @@ async function renderMarketStructureCard(distIndexPath: string, testInfo: TestIn
       evidenceNotes.push(
         `GitHub Actions run: ${artifactRunHint}`,
         `GitHub Actions artifacts page: ${artifactHint}`,
+        `Download command: ${artifactDownloadHint}`,
         `Evidence attachment name: ${artifactName}（请在 PR 说明/评论附上截图附件或其下载链接）`,
       );
     } else {
       evidenceNotes.push(
         '未在 GitHub Actions 运行，不具备公开 artifact 链接；请在 PR 中附上截图附件名和本地复现命令。',
+        '可复现证据路径（本地）：' + testInfo.outputPath('market-structure-card-visual.png'),
       );
     }
     evidenceNotes.push(
