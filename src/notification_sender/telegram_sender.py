@@ -244,37 +244,64 @@ class TelegramSender:
         """分段发送长 Telegram 消息"""
         # 按段落分割
         sections = content.split("\n---\n")
+        delimiter = "\n---\n"
+        delimiter_length = len(delimiter)
 
         current_chunk = []
         current_length = 0
         all_success = True
         chunk_index = 1
 
-        for section in sections:
-            section_length = len(section) + 5  # +5 for "\n---\n"
+        def _flush_chunk() -> bool:
+            nonlocal current_chunk, current_length, chunk_index, all_success
+            if not current_chunk:
+                return all_success
 
-            if current_length + section_length > max_length:
-                # 发送当前块
-                if current_chunk:
-                    chunk_content = "\n---\n".join(current_chunk)
-                    logger.info(f"发送 Telegram 消息块 {chunk_index}...")
-                    if not self._send_telegram_message(api_url, chat_id, chunk_content, message_thread_id, timeout_seconds=timeout_seconds):
-                        all_success = False
-                    chunk_index += 1
-
-                # 重置
-                current_chunk = [section]
-                current_length = section_length
-            else:
-                current_chunk.append(section)
-                current_length += section_length
-
-        # 发送最后一块
-        if current_chunk:
             chunk_content = "\n---\n".join(current_chunk)
             logger.info(f"发送 Telegram 消息块 {chunk_index}...")
+            chunk_index += 1
+            current_chunk = []
+            current_length = 0
             if not self._send_telegram_message(api_url, chat_id, chunk_content, message_thread_id, timeout_seconds=timeout_seconds):
                 all_success = False
+            return all_success
+
+        def _split_long_section(section: str, limit: int) -> list[str]:
+            if len(section) <= limit:
+                return [section]
+            chunks: list[str] = []
+            for start in range(0, len(section), limit):
+                chunks.append(section[start:start + limit])
+            return chunks
+
+        for section in sections:
+            if len(section) > max_length:
+                # 单段超限时强制切片，避免依赖“\\n---\\n”边界导致的整段超长发送
+                if not _flush_chunk():
+                    return False
+                for long_chunk in _split_long_section(section, max_length):
+                    logger.info(f"发送 Telegram 消息块 {chunk_index}...")
+                    chunk_index += 1
+                    if not self._send_telegram_message(api_url, chat_id, long_chunk, message_thread_id, timeout_seconds=timeout_seconds):
+                        all_success = False
+                continue
+
+            additional_length = len(section)
+            if current_chunk:
+                additional_length += delimiter_length
+
+            if current_length + additional_length > max_length:
+                _flush_chunk()
+                current_chunk = [section]
+                current_length = len(section)
+                continue
+
+            current_chunk.append(section)
+            current_length += additional_length
+
+        # 发送最后一块
+        if not _flush_chunk():
+            return False
 
         return all_success
 

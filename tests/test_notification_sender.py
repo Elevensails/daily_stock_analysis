@@ -1650,6 +1650,38 @@ class TestTelegramSender(unittest.TestCase):
         self.assertIn("[详情](https://example.com/report)", rendered)
         self.assertNotIn("# 日报", rendered)
 
+    @mock.patch.object(TelegramSender, "_send_telegram_message", return_value=True)
+    def test_send_telegram_chunked_splits_large_reason_without_delimiter(self, mock_send_telegram_message):
+        cfg = _config(telegram_bot_token="BOT", telegram_chat_id="CHAT")
+        sender = TelegramSender(cfg)
+        long_reason = "原因过长需分段测试：" + ("A" * 5000)
+        content = f"**AI 决策信号**\n- 理由: {long_reason}\n"
+
+        result = sender._send_telegram_chunked(
+            "http://api.telegram.org", "CHAT", content, max_length=4096, timeout_seconds=3
+        )
+
+        self.assertTrue(result)
+        self.assertGreaterEqual(len(mock_send_telegram_message.call_args_list), 2)
+        for call in mock_send_telegram_message.call_args_list:
+            sent_text = call.args[2]
+            self.assertLessEqual(len(sent_text), 4096)
+
+    @mock.patch.object(TelegramSender, "_send_telegram_message", return_value=True)
+    def test_send_to_telegram_chunked_path_with_long_reason_without_delimiter(self, mock_send_telegram_message):
+        cfg = _config(telegram_bot_token="BOT", telegram_chat_id="CHAT")
+        sender = TelegramSender(cfg)
+        long_reason = "原因过长需分段测试：" + ("B" * 5000)
+        content = f"**AI 决策信号**\n- 理由: {long_reason}\n"
+
+        result = sender.send_to_telegram(content)
+
+        self.assertTrue(result)
+        self.assertGreaterEqual(len(mock_send_telegram_message.call_args_list), 2)
+        for call in mock_send_telegram_message.call_args_list:
+            sent_text = call.args[2]
+            self.assertLessEqual(len(sent_text), 4096)
+
     @mock.patch("src.notification_sender.telegram_sender.requests.post")
     def test_send_plain_text_fallback_handles_non_json_200(self, mock_post):
         markdown_error = _response(400)
