@@ -145,9 +145,9 @@ describe('AnalysisContextSummary', () => {
     expect(screen.getByText('数据限制:')).toBeInTheDocument();
     expect(screen.getByText(/基本面：抓取失败/)).toBeInTheDocument();
     expect(screen.getByText(/news_provider_timeout/)).toBeInTheDocument();
-    expect(screen.getByText(/说明: 新闻未进入本次分析，结论未使用新闻上下文；请检查搜索配置、网络或限流后重新分析/)).toBeInTheDocument();
+    expect(screen.getByText(/说明: 新闻未进入本次 LLM 分析，结论未使用新闻上下文/)).toBeInTheDocument();
     expect(screen.getByText(/诊断码: news_context_missing/)).toBeInTheDocument();
-    expect(screen.queryByText(/页面中的相关资讯来自补充检索或历史记录/)).not.toBeInTheDocument();
+    expect(screen.getByText(/报告页相关资讯由独立接口补充，显示与否不代表已进入本次分析/)).toBeInTheDocument();
     expect(screen.getByText('来源: 未记录输入来源')).toBeInTheDocument();
     expect(screen.queryByText(/^处理:/)).not.toBeInTheDocument();
     expect(screen.queryByText(/^范围:/)).not.toBeInTheDocument();
@@ -177,9 +177,43 @@ describe('AnalysisContextSummary', () => {
 
     expect(screen.getByText('Data Limitations:')).toBeInTheDocument();
     expect(screen.getByText(/fundamentals: Fetch failed/)).toBeInTheDocument();
-    expect(screen.getByText(/Details: News was not included, so the conclusion did not use news context/)).toBeInTheDocument();
+    expect(screen.getByText(/Details: News was not included in this LLM run, so the conclusion did not use news context/)).toBeInTheDocument();
+    expect(screen.getByText(/related news on the report page is loaded separately and does not indicate that it was used in this analysis/)).toBeInTheDocument();
     expect(screen.getByText(/Diagnostic code: news_context_missing/)).toBeInTheDocument();
     expect(screen.queryByText(/^Action:/)).not.toBeInTheDocument();
+  });
+
+  it('does not claim available fundamentals were unused when only provenance is missing', () => {
+    const availableFundamentalsOverview: AnalysisContextPackOverview = {
+      ...overview,
+      blocks: [{
+        key: 'fundamentals',
+        label: '基本面',
+        status: 'available',
+        source: null,
+        warnings: [],
+        missingReasons: ['fundamental_source_chain_missing'],
+      }],
+      counts: {
+        available: 1,
+        missing: 0,
+        notSupported: 0,
+        fallback: 0,
+        stale: 0,
+        estimated: 0,
+        partial: 0,
+        fetchFailed: 0,
+      },
+    };
+
+    render(<AnalysisContextSummary overview={availableFundamentalsOverview} />);
+
+    fireEvent.click(screen.getAllByText('输入数据块')[0]);
+
+    expect(screen.getByText(/说明: 未记录基本面来源链元数据/)).toBeInTheDocument();
+    expect(screen.getByText(/基本面是否进入本次分析以当前状态为准/)).toBeInTheDocument();
+    expect(screen.getByText(/诊断码: fundamental_source_chain_missing/)).toBeInTheDocument();
+    expect(screen.queryByText(/本次分析未使用基本面数据/)).not.toBeInTheDocument();
   });
 
   it('uses status guidance for unknown reason codes without adding another field', () => {
@@ -450,8 +484,8 @@ describe('ReportSummary analysis context placement', () => {
     expect(contextSummary.compareDocumentPosition(diagnostics) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(diagnostics.compareDocumentPosition(traceability) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     fireEvent.click(within(contextSummary).getAllByText('输入数据块')[0]);
-    expect(within(contextSummary).getByText(/说明: 新闻未进入本次分析，结论未使用新闻上下文/)).toBeInTheDocument();
-    expect(within(contextSummary).queryByText(/页面中的相关资讯来自补充检索或历史记录/)).not.toBeInTheDocument();
+    expect(within(contextSummary).getByText(/说明: 新闻未进入本次 LLM 分析，结论未使用新闻上下文/)).toBeInTheDocument();
+    expect(within(contextSummary).getByText(/报告页相关资讯由独立接口补充，显示与否不代表已进入本次分析/)).toBeInTheDocument();
     expect(screen.queryByText('AI 建议 / 决策信号')).not.toBeInTheDocument();
     expect(screen.queryByRole('region', { name: '题材主线与个股位置' })).not.toBeInTheDocument();
     expect(screen.queryByText('Robotics')).not.toBeInTheDocument();
