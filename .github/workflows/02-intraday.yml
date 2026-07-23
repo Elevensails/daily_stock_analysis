@@ -1,61 +1,50 @@
 name: 盘中实时追踪
 on:
   schedule:
-    - cron: '45 1 * * 1-5'    # 北京 09:45
-    - cron: '30 2 * * 1-5'    # 北京 10:30
-    - cron: '30 5 * * 1-5'    # 北京 13:30
-    - cron: '30 6 * * 1-5'    # 北京 14:30
-    - cron: '55 6 * * 1-5'    # 北京 14:55
+    - cron: '45 1 * * 1-5'
+    - cron: '30 2 * * 1-5'
+    - cron: '30 5 * * 1-5'
+    - cron: '30 6 * * 1-5'
+    - cron: '55 6 * * 1-5'
   workflow_dispatch:
-
-concurrency:
-  group: intraday
-  cancel-in-progress: false
-
+    inputs:
+      time:
+        description: '时段'
+        required: true
+        default: '09:45'
+        type: choice
+        options:
+          - '09:45'
+          - '10:30'
+          - '13:30'
+          - '14:30'
+          - '14:55'
 jobs:
   analyze:
     runs-on: ubuntu-latest
     environment: STOCK_LIST
-    timeout-minutes: 15
-
+    timeout-minutes: 10
     steps:
-      - name: 检出代码
-        uses: actions/checkout@v5
-
-      - name: 设置 Python 环境
-        uses: actions/setup-python@v6
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
-          cache: 'pip'
-
-      - name: 安装依赖
-        run: |
-          pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: 创建必要目录
-        run: mkdir -p data logs reports
-
-      - name: 执行盘中分析
-        env:
-          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-          STOCK_LIST: ${{ vars.STOCK_LIST }}
-          GENERATION_BACKEND: litellm
-          REPORT_TYPE: intraday
-        run: python main.py --no-market-review
-
-      - name: 上传分析报告
-        uses: actions/upload-artifact@v6
-        if: always()
-        with:
-          name: intraday-reports-${{ github.run_number }}
-          path: |
-            reports/
-            logs/
-          retention-days: 30
-
-      - name: 部署到 GH Pages
+      - run: pip install akshare
+      - name: 执行盘中买卖剧本
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPORTS_DIR: reports
-        run: python scripts/deploy_pages.py
+          STOCK_LIST: ${{ vars.STOCK_LIST }}
+        run: |
+          TIME="${{ github.event.inputs.time || '09:45' }}"
+          # 根据 cron 触发时间推断时段
+          if [ -z "${{ github.event.inputs.time }}" ]; then
+            HOUR=07
+            MIN=08
+            if [ "" = "01" ] && [ "" = "45" ]; then TIME="09:45"; fi
+            if [ "" = "02" ] && [ "" = "30" ]; then TIME="10:30"; fi
+            if [ "" = "05" ] && [ "" = "30" ]; then TIME="13:30"; fi
+            if [ "" = "06" ] && [ "" = "30" ]; then TIME="14:30"; fi
+            if [ "" = "06" ] && [ "" = "55" ]; then TIME="14:55"; fi
+          fi
+          echo "Running intraday playbook for time: "
+          python scripts/intraday_playbook.py --time ""
