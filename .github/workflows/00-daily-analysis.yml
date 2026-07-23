@@ -550,6 +550,20 @@ jobs:
             tail -30 logs/stock_analysis_*.log 2>/dev/null || echo "无日志"
           fi
 
+      - name: 标准化报告命名（时段+类型）
+        run: |
+          HOUR=$(date -u -d '+8 hours' +%H)
+          MIN=$(date -u -d '+8 hours' +%M)
+          TIME="$HOUR$MIN"
+          DATE=$(date +%Y%m%d)
+          if [ -f reports/report_$DATE.md ]; then
+            cp reports/report_$DATE.md reports/report_${TIME}_${DATE}.md
+            echo "renamed: report_$DATE.md -> report_${TIME}_${DATE}.md"
+          fi
+          if [ -f reports/market_review_$DATE.md ]; then
+            cp reports/market_review_$DATE.md reports/market_review_${TIME}_${DATE}.md
+            echo "renamed: market_review_$DATE.md -> market_review_${TIME}_${DATE}.md"
+          fi
       - name: 部署到 GH Pages
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
