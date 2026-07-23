@@ -49,7 +49,7 @@ def fetch_quotes(stock_codes):
     url = 'https://push2.eastmoney.com/api/qt/ulist.np/get?fields=f2,f3,f4,f5,f6,f12,f14,f15,f16,f17&secids=' + ','.join(secids)
     try:
         req = urllib.request.Request(url)
-        with urllib.request.urlopen(req, timeout=15) as resp:
+        with urllib.request.urlopen(req, timeout=8) as resp:
             d = json.loads(resp.read())
         result = {}
         for it in (d.get('data', {}) or {}).get('diff', []):
@@ -75,7 +75,7 @@ def fetch_indices():
     url = 'https://push2.eastmoney.com/api/qt/ulist.np/get?fields=f2,f3,f4,f12,f14&secids=1.000001,0.399001,0.399006'
     try:
         req = urllib.request.Request(url)
-        with urllib.request.urlopen(req, timeout=15) as resp:
+        with urllib.request.urlopen(req, timeout=8) as resp:
             d = json.loads(resp.read())
         result = {}
         for it in (d.get('data', {}) or {}).get('diff', []):
@@ -93,7 +93,7 @@ def fetch_sector_top(n=8):
     url = 'https://push2.eastmoney.com/api/qt/clist/get?pn=1&pz={}&po=1&np=1&fields=f2,f3,f12,f14&fid=f3&fs=m:90+t:2'.format(n)
     try:
         req = urllib.request.Request(url)
-        with urllib.request.urlopen(req, timeout=15) as resp:
+        with urllib.request.urlopen(req, timeout=8) as resp:
             d = json.loads(resp.read())
         return [{'name': it.get('f14', ''), 'chg_pct': it.get('f3', 0) / 100} for it in (d.get('data', {}) or {}).get('diff', [])]
     except Exception as e:
@@ -323,39 +323,38 @@ def main():
     print('更新 index.html: HTTP {}'.format(status2))
 
 def generate_index_with_intraday(seg_time, intraday_file, now):
-    """生成包含盘中追踪链接的 index.html"""
+    """生成包含盘中追踪链接的 index.html（用字符串拼接，不用 .format 避免 CSS {} 冲突）"""
     ts = now.strftime('%Y-%m-%d %H:%M')
-    return '''<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>A股智能分析 · 决策仪表盘</title>
-<style>
-body{margin:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#f5f7fa;color:#1f2937}
-.wrap{max-width:1080px;margin:0 auto;padding:40px 20px}
-header{background:linear-gradient(135deg,#1e3a5f,#1e40af);color:#fff;padding:24px 0 20px;border-radius:14px;text-align:center;margin-bottom:20px}
-header h1{margin:0 0 6px;font-size:24px}
-header .sub{opacity:.92;font-size:13px}
-.card{background:#fff;border:1px solid #e5e7eb;border-radius:11px;padding:16px 18px;margin:12px 0;text-decoration:none;color:inherit;transition:.15s;display:block}
-.card:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.08)}
-.card .t{font-size:16px;font-weight:700;color:#1e40af}
-.card .d{font-size:13px;color:#64748b;margin-top:4px}
-.card.live{border-left:4px solid #ca8a04;background:linear-gradient(135deg,#fef9c3,#fff)}
-.card.intraday{border-left:4px solid #1e40af}
-footer{margin-top:30px;color:#64748b;font-size:12px;text-align:center}
-</style>
-</head>
-<body>
-<div class="wrap">
-<header><h1>&#127919; A股智能分析 · 决策仪表盘</h1><div class="sub">{} · DeepSeek AI · 4 只持仓 · GitHub Actions 自动生成</div></header>
-<a class="card live" href="dashboard.html"><div class="t">&#9889; 实时盯盘</div><div class="d">30 秒自动刷新 · 持仓 + 指数 + 板块 Top</div></a>
-<a class="card intraday" href="{}"><div class="t">&#128336; 盘中追踪 · {}</div><div class="d">分时段买卖剧本 · 持仓操作面板 · 条件式信号</div></a>
-<div class="card"><div class="t">&#128202; 每日分析报告</div><div class="d">报告将在每日 18:00 自动生成并部署</div></div>
-<footer>Fork 自 ZhuLinsen/daily_stock_analysis (49K stars) · 月成本&asymp;0<br>以上分析基于公开数据，不构成投资建议</footer>
-</div>
-</body>
-</html>'''.format(ts, intraday_file, seg_time)
+    parts = []
+    parts.append('<!DOCTYPE html>')
+    parts.append('<html lang="zh-CN"><head>')
+    parts.append('<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">')
+    parts.append('<title>A股智能分析 · 决策仪表盘</title>')
+    parts.append('<style>')
+    parts.append('body{margin:0;font-family:-apple-system,sans-serif;background:#f5f7fa;color:#1f2937}')
+    parts.append('.wrap{max-width:1080px;margin:0 auto;padding:40px 20px}')
+    parts.append('header{background:linear-gradient(135deg,#1e3a5f,#1e40af);color:#fff;padding:24px 0 20px;border-radius:14px;text-align:center;margin-bottom:20px}')
+    parts.append('header h1{margin:0 0 6px;font-size:24px}header .sub{opacity:.92;font-size:13px}')
+    parts.append('.card{background:#fff;border:1px solid #e5e7eb;border-radius:11px;padding:16px 18px;margin:12px 0;text-decoration:none;color:inherit;transition:.15s;display:block}')
+    parts.append('.card:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.08)}')
+    parts.append('.card .t{font-size:16px;font-weight:700;color:#1e40af}.card .d{font-size:13px;color:#64748b;margin-top:4px}')
+    parts.append('.card.live{border-left:4px solid #ca8a04;background:linear-gradient(135deg,#fef9c3,#fff)}')
+    parts.append('.card.intraday{border-left:4px solid #1e40af}')
+    parts.append('.card.quant{border-left:4px solid #7c3aed;background:linear-gradient(135deg,#f5f3ff,#fff)}')
+    parts.append('.card.report{border-left:4px solid #16a34a}')
+    parts.append('footer{margin-top:30px;color:#64748b;font-size:12px;text-align:center}')
+    parts.append('</style></head><body>')
+    parts.append('<div class="wrap">')
+    parts.append('<header><h1>&#127919; A股智能分析 · 决策仪表盘</h1>')
+    parts.append('<div class="sub">' + ts + ' · DeepSeek AI · 4 只持仓 · GitHub Actions 自动生成</div></header>')
+    parts.append('<a class="card live" href="dashboard.html"><div class="t">&#9889; 实时盯盘</div><div class="d">30 秒自动刷新 · 持仓 + 指数 + 板块</div></a>')
+    parts.append('<a class="card intraday" href="' + intraday_file + '"><div class="t">&#128336; 盘中追踪 · ' + seg_time + '</div><div class="d">分时段买卖剧本 · 条件式信号</div></a>')
+    parts.append('<a class="card report" href="report_20260723.html"><div class="t">&#128202; 每日分析报告</div><div class="d">决策仪表盘 · 舆情/业绩/技术面</div></a>')
+    parts.append('<a class="card quant" href="quant.html"><div class="t">&#128200; 量化分析 · Vibe-Trading</div><div class="d">多智能体辩论 · 策略回测</div></a>')
+    parts.append('<footer>Fork 自 ZhuLinsen/daily_stock_analysis (49K stars) · 月成本&asymp;0<br>以上分析基于公开数据，不构成投资建议</footer>')
+    parts.append('</div></body></html>')
+    return '
+'.join(parts)
 
 if __name__ == '__main__':
     main()

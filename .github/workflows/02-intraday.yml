@@ -19,6 +19,8 @@ on:
           - '13:30'
           - '14:30'
           - '14:55'
+permissions:
+  contents: write
 jobs:
   analyze:
     runs-on: ubuntu-latest
@@ -35,16 +37,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           STOCK_LIST: ${{ vars.STOCK_LIST }}
         run: |
-          TIME="${{ github.event.inputs.time || '09:45' }}"
-          # 根据 cron 触发时间推断时段
-          if [ -z "${{ github.event.inputs.time }}" ]; then
-            HOUR=07
-            MIN=08
-            if [ "" = "01" ] && [ "" = "45" ]; then TIME="09:45"; fi
-            if [ "" = "02" ] && [ "" = "30" ]; then TIME="10:30"; fi
-            if [ "" = "05" ] && [ "" = "30" ]; then TIME="13:30"; fi
-            if [ "" = "06" ] && [ "" = "30" ]; then TIME="14:30"; fi
-            if [ "" = "06" ] && [ "" = "55" ]; then TIME="14:55"; fi
+          TIME="${{ github.event.inputs.time || '' }}"
+          if [ -z "$TIME" ]; then
+            HOUR=$(date -u +%H)
+            MIN=$(date -u +%M)
+            if [ "$HOUR" = "01" ] && [ "$MIN" = "45" ]; then TIME="09:45"; fi
+            if [ "$HOUR" = "02" ] && [ "$MIN" = "30" ]; then TIME="10:30"; fi
+            if [ "$HOUR" = "05" ] && [ "$MIN" = "30" ]; then TIME="13:30"; fi
+            if [ "$HOUR" = "06" ] && [ "$MIN" = "30" ]; then TIME="14:30"; fi
+            if [ "$HOUR" = "06" ] && [ "$MIN" = "55" ]; then TIME="14:55"; fi
           fi
-          echo "Running intraday playbook for time: "
-          python scripts/intraday_playbook.py --time ""
+          if [ -z "$TIME" ]; then TIME="09:45"; fi
+          echo "Running intraday playbook for time: $TIME"
+          python scripts/intraday_playbook.py --time "$TIME"
