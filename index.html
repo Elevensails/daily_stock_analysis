@@ -17,25 +17,25 @@ header .sub{opacity:.92;font-size:13px}
 .card .t{font-size:16px;font-weight:700;color:#1e40af}
 .card .d{font-size:13px;color:#64748b;margin-top:4px}
 .card.live{border-left:4px solid #ca8a04;background:linear-gradient(135deg,#fef9c3,#fff)}
-.card.stock{border-left:4px solid #1e40af}
-.card.market{border-left:4px solid #0d9488}
 .card.quant{border-left:4px solid #7c3aed;background:linear-gradient(135deg,#f5f3ff,#fff)}
 footer{margin-top:30px;color:#64748b;font-size:12px;text-align:center}
 </style>
 </head>
 <body>
 <div class="wrap">
-<header><h1>&#127919; A股智能分析 · 决策仪表盘</h1><div class="sub">2026-07-23 16:41 · DeepSeek AI · 4 只持仓 · GitHub Actions 自动生成</div><div class="topstat"><div><b>4</b> 持仓</div><div><b>5次/天</b> 分析</div><div><b>&asymp;0</b> 月成本</div></div></header>
+<header><h1>&#127919; A股智能分析 · 决策仪表盘</h1><div class="sub">2026-07-23 21:07 · DeepSeek AI · 4 只持仓 · 每日 5 时段自动分析</div><div class="topstat"><div><b>5次/天</b> 分析</div><div><b>4</b> 持仓</div><div><b>2</b> 报告类型</div><div><b>≈0</b> 月成本</div></div></header>
 
-<a class="card live" href="dashboard.html"><div class="t">&#9889; 实时盯盘</div><div class="d">30 秒自动刷新 · 4 只持仓 + 三大指数 + 板块 Top · 客户端直连行情</div></a>
+<a class="card live" href="dashboard.html"><div class="t">⚡ 实时盯盘</div><div class="d">30 秒自动刷新 · 4 只持仓 + 三大指数 + 板块 Top</div></a>
+<a class="card" style="border-left:4px solid #1e40af" href="market_review_20260723.html"><div class="t">🌍 每日大盘复盘 · 2026-07-23</div><div class="d"><span style="background:#1e40af;color:#fff;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600">手动运行</span> · DeepSeek AI 生成</div></a>
+<a class="card" style="border-left:4px solid #1e40af" href="report_20260723.html"><div class="t">📊 每日个股分析 · 2026-07-23</div><div class="d"><span style="background:#1e40af;color:#fff;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600">手动运行</span> · DeepSeek AI 生成</div></a>
+<a class="card" style="border-left:4px solid #f59e0b;opacity:.55" href="#"><div class="t">⏳ 09:00 早盘分析</div><div class="d">待下次 cron 触发 · 自动生成报告</div></a>
+<a class="card" style="border-left:4px solid #ef4444;opacity:.55" href="#"><div class="t">⏳ 09:30 开盘追踪</div><div class="d">待下次 cron 触发 · 自动生成报告</div></a>
+<a class="card" style="border-left:4px solid #8b5cf6;opacity:.55" href="#"><div class="t">⏳ 12:00 午间复盘</div><div class="d">待下次 cron 触发 · 自动生成报告</div></a>
+<a class="card" style="border-left:4px solid #3b82f6;opacity:.55" href="#"><div class="t">⏳ 14:30 午盘追踪</div><div class="d">待下次 cron 触发 · 自动生成报告</div></a>
+<a class="card" style="border-left:4px solid #10b981;opacity:.55" href="#"><div class="t">⏳ 18:00 收盘复盘</div><div class="d">待下次 cron 触发 · 自动生成报告</div></a>
+<a class="card quant" href="quant.html"><div class="t">📈 量化分析 · Vibe-Trading</div><div class="d">多智能体辩论 · MCP 对接 · 策略回测</div></a>
 
-<a class="card stock" href="report_20260723.html"><div class="t">&#128202; 每日个股分析</div><div class="d">4 只持仓逐一深度分析：舆情 / 业绩 / 技术面 / 操作点位 / 信号归因</div></a>
-
-<a class="card market" href="market_review_20260723.html"><div class="t">&#127758; 每日大盘复盘</div><div class="d">盘面总览 · 指数结构 · 板块主线 · 资金情绪 · 明日交易计划</div></a>
-
-<a class="card quant" href="quant.html"><div class="t">&#128200; 量化分析 · Vibe-Trading</div><div class="d">多智能体辩论 · MCP 对接 · 策略回测 · 综合报告</div></a>
-
-<footer>Fork 自 <a href="https://github.com/ZhuLinsen/daily_stock_analysis">ZhuLinsen/daily_stock_analysis</a> (49K stars) · GitHub Actions + DeepSeek · 月成本&asymp;0<br>每日分析: 09:00 / 09:30 / 12:00 / 14:30 / 18:00（5次/天 DeepSeek AI） · 以上分析基于公开数据，不构成投资建议</footer>
+<footer>Fork 自 <a href="https://github.com/ZhuLinsen/daily_stock_analysis">ZhuLinsen/daily_stock_analysis</a> (49K stars) · GitHub Actions + DeepSeek<br>每日分析: 09:00 早盘 / 09:30 开盘 / 12:00 午间 / 14:30 午盘 / 18:00 收盘（5次/天）<br>以上分析基于公开数据，不构成投资建议</footer>
 </div>
 </body>
 </html>
