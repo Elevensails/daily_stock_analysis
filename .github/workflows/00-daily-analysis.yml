@@ -1,4 +1,4 @@
-name: A股每日分析
+name: Daily Stock Analysis
 
 on:
   # 定时触发 - 每天北京时间 18:00 (UTC 10:00)
@@ -13,20 +13,9 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: '运行模式'
-        required: true
-        default: 'full'
-        type: choice
-        options:
-          - full          # 完整分析（股票+大盘）
-          - market-only   # 仅大盘复盘
-          - stocks-only   # 仅股票分析
-      force_run:
-        description: '强制运行（跳过交易日检查）'
+        description: run mode
         required: false
-        default: false
-        type: boolean
-
+        default: full
 # 并发控制：同一时间只运行一个分析任务
 concurrency:
   group: stock-analysis
