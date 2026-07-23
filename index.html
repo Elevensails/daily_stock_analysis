@@ -10,6 +10,8 @@ body{margin:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-ser
 header{background:linear-gradient(135deg,#1e3a5f,#1e40af);color:#fff;padding:24px 0 20px;border-radius:14px;text-align:center;margin-bottom:20px}
 header h1{margin:0 0 6px;font-size:24px}
 header .sub{opacity:.92;font-size:13px}
+.topstat{display:flex;gap:10px;justify-content:center;margin-top:10px;flex-wrap:wrap}
+.topstat div{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:14px;padding:3px 12px;font-size:12px}
 .card{background:#fff;border:1px solid #e5e7eb;border-radius:11px;padding:16px 18px;margin:12px 0;text-decoration:none;color:inherit;transition:.15s;display:block}
 .card:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.08)}
 .card .t{font-size:16px;font-weight:700;color:#1e40af}
@@ -23,12 +25,19 @@ footer{margin-top:30px;color:#64748b;font-size:12px;text-align:center}
 </head>
 <body>
 <div class="wrap">
-<header><h1>&#127919; A股智能分析 · 决策仪表盘</h1><div class="sub">2026-07-23 15:12 · DeepSeek AI · 4 只持仓 · GitHub Actions 自动生成</div></header>
+<header><h1>&#127919; A股智能分析 · 决策仪表盘</h1><div class="sub">2026-07-23 15:35 · DeepSeek AI · 4 只持仓 · GitHub Actions 自动生成</div><div class="topstat"><div><b>4</b> 持仓</div><div><b>5次/天</b> 分析</div><div><b>3</b> 模块</div><div><b>≈0</b> 月成本</div></div></header>
+
 <a class="card live" href="dashboard.html"><div class="t">&#9889; 实时盯盘</div><div class="d">30 秒自动刷新 · 4 只持仓 + 三大指数 + 板块 Top</div></a>
-<a class="card intraday" href="intraday_1455_20260723.html"><div class="t">&#128336; 盘中追踪 · 14:55</div><div class="d">分时段买卖剧本 · 持仓操作面板 · 条件式信号</div></a>
+
+<a class="card intraday" href="intraday_1455_20260723.html"><div class="t">&#128336; 盘中追踪 · 5 时段买卖剧本</div><div class="d">09:45 / 10:30 / 13:30 / 14:30 / 14:55 · 条件式买卖信号</div></a>
+
 <a class="card report" href="report_20260723.html"><div class="t">&#128202; 每日分析报告 · 07-23</div><div class="d">决策仪表盘 · 舆情/业绩/技术面/操作点位 · 4 只持仓</div></a>
-<a class="card quant" href="quant.html"><div class="t">&#128200; 量化分析 · Vibe-Trading</div><div class="d">多智能体辩论 · 策略回测 · MCP 对接 · 综合报告</div></a>
-<footer>Fork 自 <a href="https://github.com/ZhuLinsen/daily_stock_analysis">ZhuLinsen/daily_stock_analysis</a> (49K stars) · GitHub Actions + DeepSeek · 月成本&asymp;0<br>以上分析基于公开数据，不构成投资建议</footer>
+
+<a class="card report" href="market_review_20260723.html"><div class="t">&#127758; 大盘复盘 · 07-23</div><div class="d">盘面总览 · 指数结构 · 板块主线 · 明日计划</div></a>
+
+<a class="card quant" href="quant.html"><div class="t">&#128200; 量化分析 · Vibe-Trading</div><div class="d">多智能体辩论 · MCP 对接 · 策略回测 · 综合报告</div></a>
+
+<footer>Fork 自 <a href="https://github.com/ZhuLinsen/daily_stock_analysis">ZhuLinsen/daily_stock_analysis</a> (49K stars) · GitHub Actions + DeepSeek · 月成本&asymp;0<br>今日分析: 09:00 / 09:30 / 12:00 / 14:30 / 18:00 · 以上分析基于公开数据，不构成投资建议</footer>
 </div>
 </body>
 </html>
