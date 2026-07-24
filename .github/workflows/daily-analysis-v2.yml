@@ -44,6 +44,16 @@ jobs:
         run: python main.py
       - name: Rename reports with time
         run: |
+          T=0057; D=20260724
+          for f in report_.md market_review_.md vibe_report.md; do
+            src="reports/"
+            if [ -f "" ]; then
+              dst="reports/__.md"
+              cp "" ""
+              echo "renamed:  -> __.md"
+            fi
+          done
+        run: |
           H=08; M=38
           T=""; D=20260724
           for f in reports/report_.md reports/market_review_.md; do
