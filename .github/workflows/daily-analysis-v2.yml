@@ -15,6 +15,10 @@ on:
         description: run mode
         required: false
         default: full
+      time_slot:
+        description: target time slot HHMM (blank=auto)
+        required: false
+        default: ""
 
 jobs:
   analyze:
@@ -34,6 +38,8 @@ jobs:
           GENERATION_BACKEND: litellm
         run: python main.py
       - name: Rename reports with time label
+        env:
+          TIME_SLOT: ${{ inputs.time_slot }}
         run: python3 scripts/rename_reports.py
       - name: Deploy to GH Pages
         env:
