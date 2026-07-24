@@ -6,6 +6,10 @@ import os, re, base64, json, urllib.request, urllib.error, glob
 from datetime import datetime, timezone, timedelta
 
 TOKEN = os.environ.get('GITHUB_TOKEN', '')
+if not TOKEN:
+    print('FATAL: GITHUB_TOKEN is empty! Deploy cannot proceed.')
+    raise SystemExit(1)
+print(f'GITHUB_TOKEN length: {len(TOKEN)} (starts with: {TOKEN[:4]}...)')
 API = 'https://api.github.com/repos/Elevensails/daily_stock_analysis/contents'
 BRANCH = 'gh-pages'
 HEADERS = {'Authorization': f'Bearer {TOKEN}', 'Content-Type': 'application/json'}
