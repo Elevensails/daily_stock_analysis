@@ -42,23 +42,24 @@ jobs:
           GENERATION_BACKEND: litellm
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python main.py
-      - name: Rename reports with time
+      - name: Rename reports with time label
         run: |
-          T=0057; D=20260724
-          for f in report_.md market_review_.md vibe_report.md; do
-            src="reports/"
-            if [ -f "" ]; then
-              dst="reports/__.md"
-              cp "" ""
-              echo "renamed:  -> __.md"
-            fi
-          done
-        run: |
-          H=08; M=38
-          T=""; D=20260724
-          for f in reports/report_.md reports/market_review_.md; do
-            [ -f "" ] && cp "" "__.md" && echo "renamed  -> __.md"
-          done
+          python -c "
+import os, glob, shutil
+from datetime import datetime, timezone, timedelta
+now = datetime.now(timezone(timedelta(hours=8)))
+tslot = now.strftime('%H%M')
+today = now.strftime('%Y%m%d')
+for pattern in ['reports/report_*.md', 'reports/market_review_*.md']:
+    for f in glob.glob(pattern):
+        if f'_{tslot}_' in f:
+            continue
+        prefix = 'report' if '/report_' in f else 'market_review'
+        dst = f'reports/{prefix}_{tslot}_{today}.md'
+        shutil.copy(f, dst)
+        print(f'renamed: {os.path.basename(f)} -> {os.path.basename(dst)}')
+print('rename done')
+          "
       - name: Vibe-Trading 量化分析
         continue-on-error: true
         run: |
