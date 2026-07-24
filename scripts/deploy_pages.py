@@ -136,8 +136,11 @@ def make_slot_page(tslot, time_label, slot_name, color, color_dark, today, repor
     else:
         cards.append(f'<div style="background:#fff;border:1px solid #e5e7eb;border-left:4px solid #0d9488;border-radius:11px;padding:18px 20px;margin:14px 0;opacity:.5"><div style="font-size:17px;font-weight:700;color:#1e40af">⏳ 大盘复盘</div><div style="font-size:13px;color:#64748b;margin-top:6px">待 cron 触发自动生成</div></div>')
     
-    # Quant card
-    cards.append(f'<a class="card quant" href="quant.html" style="background:#fff;border:1px solid #e5e7eb;border-left:4px solid #7c3aed;border-radius:11px;padding:18px 20px;margin:14px 0;text-decoration:none;color:inherit;display:block"><div style="font-size:17px;font-weight:700">📈 量化分析 · Vibe-Trading</div><div style="font-size:13px;color:#64748b;margin-top:6px">多智能体辩论 · MCP 对接 · 策略回测</div></a>')
+    # Quant/Vibe card
+    if 'vibe' in slot_data:
+        cards.append(f'<a class="card quant" href="{slot_data["vibe"]}" style="background:#fff;border:1px solid #e5e7eb;border-left:4px solid #7c3aed;border-radius:11px;padding:18px 20px;margin:14px 0;text-decoration:none;color:inherit;display:block"><div style="font-size:17px;font-weight:700">📈 量化分析 · Vibe-Trading</div><div style="font-size:13px;color:#64748b;margin-top:6px">多智能体辩论 · MCP 对接 · 策略回测</div></a>')
+    else:
+        cards.append(f'<a class="card quant" href="quant.html" style="background:#fff;border:1px solid #e5e7eb;border-left:4px solid #7c3aed;border-radius:11px;padding:18px 20px;margin:14px 0;text-decoration:none;color:inherit;display:block"><div style="font-size:17px;font-weight:700">📈 量化分析 · Vibe-Trading</div><div style="font-size:13px;color:#64748b;margin-top:6px">多智能体辩论 · MCP 对接 · 策略回测</div></a>')
     
     slot_html = f'''<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>{time_label} · A股分析</title>{STORED_CSS}</head><body><div class="back"><a href="index.html" title="首页">🏠</a> <a href="javascript:history.back()" title="返回">←</a></div><div class="wrap"><header style="background:linear-gradient(135deg,{color_dark},{color});color:#fff;padding:20px 18px;border-radius:14px;margin-bottom:20px"><h1 style="margin:0 0 4px;font-size:22px">🕐 {time_label} · {slot_name}</h1><div style="opacity:.85;font-size:13px">{date_disp} · DeepSeek AI · 4 只持仓</div></header>{chr(10).join(cards)}<footer style="margin-top:40px;color:#64748b;font-size:12px;text-align:center">以上分析基于公开数据，不构成投资建议</footer></div></body></html>'''
     
@@ -204,6 +207,7 @@ def main():
         basename = os.path.basename(f)
         m = re.match(r'report_(\d{4})_(\d{8})\.md', basename)
         mr = re.match(r'market_review_(\d{4})_(\d{8})\.md', basename)
+        vb = re.match(r'vibe_(\d{4})_(\d{8})\.md', basename)
         if m:
             tslot_raw, date = m.group(1), m.group(2)
             tslot = nearest_slot(tslot_raw)
@@ -216,6 +220,13 @@ def main():
             tslot = nearest_slot(tslot_raw)
             html_name = basename.replace('.md', '.html')
             reports_dict.setdefault(tslot, {})['market'] = html_name
+            status = make_report_page(f, html_name, now_ts)
+            print(f'  {status} {html_name}')
+        elif vb:
+            tslot_raw, date = vb.group(1), vb.group(2)
+            tslot = nearest_slot(tslot_raw)
+            html_name = basename.replace('.md', '.html')
+            reports_dict.setdefault(tslot, {})['vibe'] = html_name
             status = make_report_page(f, html_name, now_ts)
             print(f'  {status} {html_name}')
         else:
