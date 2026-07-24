@@ -233,6 +233,20 @@ def main():
     # Generate index.html
     status = make_index(reports_dict, today)
     print(f'  {status} index.html')
+    
+    # Push debug info
+    import json as _json
+    debug_info = {
+        'reports_dir': reports_dir,
+        'md_files_found': len(md_files),
+        'md_file_names': [os.path.basename(f) for f in md_files],
+        'cwd': os.getcwd(),
+        'reports_dict_keys': list(reports_dict.keys()),
+    }
+    _json_str = _json.dumps(debug_info, indent=2)
+    gh_put('debug.json', _json_str)
+    print(f'  debug.json pushed')
+    
     print('deploy done')
 
 if __name__ == '__main__':
