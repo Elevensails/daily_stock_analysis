@@ -1,8 +1,6 @@
 name: A-Stock Daily Analysis
 
 on:
-  push:
-    branches: [main]
   schedule:
     - cron: '0 1 * * 1-5'
     - cron: '30 1 * * 1-5'
@@ -31,22 +29,25 @@ jobs:
           python-version: "3.11"
           cache: pip
       - run: pip install -r requirements.txt
-      - name: Run analysis
+      - name: Compute time slot and date
+        run: |
+          TSLOT="${{ inputs.time_slot }}"
+          if [ -z "$TSLOT" ]; then
+            TSLOT=$(python3 -c "from datetime import datetime,timezone,timedelta;print(datetime.now(timezone(timedelta(hours=8))).strftime('%H%M'))")
+          fi
+          DATE=$(python3 -c "from datetime import datetime,timezone,timedelta;print(datetime.now(timezone(timedelta(hours=8))).strftime('%Y%m%d'))")
+          echo "TSLOT=$TSLOT" >> $GITHUB_ENV
+          echo "DATE=$DATE" >> $GITHUB_ENV
+          echo "Time slot: $TSLOT, Date: $DATE"
+      - name: Run analysis and save report
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           STOCK_LIST: ${{ vars.STOCK_LIST }}
           GENERATION_BACKEND: litellm
-        run: python main.py --no-notify
-      - name: Debug - list reports dir
         run: |
-          echo "=== reports/ ==="
-          ls -laR reports/ 2>/dev/null || echo "(reports/ not found)"
-          echo "=== all .md files ==="
-          find . -name "*.md" -not -path "./.git/*" | head -30
-      - name: Rename reports with time label
-        env:
-          TIME_SLOT: ${{ inputs.time_slot }}
-        run: python3 scripts/rename_reports.py
+          mkdir -p reports
+          python main.py --no-notify > reports/report_${TSLOT}_${DATE}.md 2>&1
+          echo "Report saved: $(wc -c < reports/report_${TSLOT}_${DATE}.md) bytes"
       - name: Deploy to GH Pages
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
