@@ -37,6 +37,8 @@ jobs:
           STOCK_LIST: ${{ vars.STOCK_LIST }}
           GENERATION_BACKEND: litellm
         run: python main.py --no-notify
+      - name: Debug - list reports dir
+        run: ls -la reports/ || echo "reports/ not found"
       - name: Rename reports with time label
         env:
           TIME_SLOT: ${{ inputs.time_slot }}
