@@ -1,0 +1,13 @@
+{
+  "reports_dir": "reports",
+  "md_files_found": 3,
+  "md_file_names": [
+    "market_review_20260724.md",
+    "report_0930_20260724.md",
+    "report_20260724.md"
+  ],
+  "cwd": "/home/runner/work/daily_stock_analysis/daily_stock_analysis",
+  "reports_dict_keys": [
+    "0930"
+  ]
+}
