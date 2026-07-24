@@ -179,7 +179,7 @@ header h1{{margin:0 0 6px;font-size:24px}}header .sub{{opacity:.92;font-size:13p
 .topstat div{{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:14px;padding:3px 12px;font-size:12px}}
 footer{{margin-top:30px;color:#64748b;font-size:12px;text-align:center}}
 </style></head><body><div class="wrap">
-<header><h1>&#127919; A股智能分析 · 决策仪表盘</h1><div class="sub">DeepSeek AI · 4 只持仓 · 5 时段/天 · 4 只持仓 · 5 时段/天</div><div class="topstat"><div><b>5次/天</b></div><div><b>4</b> 持仓</div><div><b>3</b> 报告类型</div><div><b>&asymp;0</b> 月成本</div></div></header>
+<header><h1>&#127919; A股智能分析 · 决策仪表盘</h1><div class="sub">DeepSeek AI · 4 只持仓 · 5 时段/天</div><div class="topstat"><div><b>5次/天</b></div><div><b>4</b> 持仓</div><div><b>3</b> 报告类型</div><div><b>&asymp;0</b> 月成本</div></div></header>
 <div style="font-size:14px;font-weight:700;color:#6b7280;margin:24px 0 10px;padding-bottom:6px;border-bottom:1px solid #e5e7eb">&#128197; 今日 {date_disp} · 5 时段分析</div>
 {''.join(cards)}
 <footer>Fork 自 daily_stock_analysis (49K stars)<br>时段: 09:00 早盘 / 09:30 开盘 / 12:00 午间 / 14:30 午盘 / 18:00 收盘<br>以上分析基于公开数据，不构成投资建议</footer>
