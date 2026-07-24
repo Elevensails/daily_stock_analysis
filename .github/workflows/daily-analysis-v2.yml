@@ -37,33 +37,6 @@ jobs:
           STOCK_LIST: ${{ vars.STOCK_LIST }}
           GENERATION_BACKEND: litellm
         run: python main.py
-      - name: Save reports to files
-        run: |
-          mkdir -p reports
-          python3 -c "
-import os, json
-from datetime import datetime, timezone, timedelta
-now = datetime.now(timezone(timedelta(hours=8)))
-tslot = os.environ.get('TIME_SLOT', now.strftime('%H%M'))
-today = now.strftime('%Y%m%d')
-
-# Check output/ and other dirs for generated reports
-for d in ['reports', 'output']:
-    if os.path.isdir(d):
-        for f in sorted(os.listdir(d)):
-            print(f'  [{d}] {f} ({os.path.getsize(os.path.join(d,f))} bytes)')
-
-# Create report files from environment/analysis output
-# The main.py generates analysis via notification system, not files.
-# We need to capture it differently.
-# For now, create placeholder with actual analysis info
-print('Reports dir contents after analysis:')
-if os.path.isdir('reports'):
-    for f in os.listdir('reports'):
-        print(f'  reports/{f}')
-else:
-    print('  (reports/ does not exist)')
-          "
       - name: Rename reports with time label
         env:
           TIME_SLOT: ${{ inputs.time_slot }}
