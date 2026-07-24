@@ -41,7 +41,14 @@ jobs:
           STOCK_LIST: ${{ vars.STOCK_LIST }}
           GENERATION_BACKEND: litellm
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python main.py --no-market-review
+        run: python main.py
+      - name: Rename reports with time
+        run: |
+          H=08; M=38
+          T=""; D=20260724
+          for f in reports/report_.md reports/market_review_.md; do
+            [ -f "" ] && cp "" "__.md" && echo "renamed  -> __.md"
+          done
       - name: Deploy to GH Pages
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
