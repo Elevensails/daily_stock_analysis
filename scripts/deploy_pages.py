@@ -89,7 +89,7 @@ def gh_get_sha(path):
 
 def nearest_slot(tslot):
     """Map any HHMM time to the nearest predefined slot."""
-    slots = ["0900", "0930", "1200", "1430", "1800"]
+    slots = ['0900', '0930', '1200', '1430', '1800']
     t = int(tslot[:2]) * 60 + int(tslot[2:])
     return min(slots, key=lambda s: abs((int(s[:2])*60 + int(s[2:])) - t))
 
@@ -115,6 +115,7 @@ def make_report_page(md_file, html_name, now_ts):
 def make_slot_page(tslot, time_label, slot_name, color, color_dark, today, reports_dict):
     """Generate and push slot_HHMM.html page for a time slot."""
     now_ts = datetime.now(timezone(timedelta(hours=8))).strftime('%Y-%m-%d %H:%M')
+    date_disp = '今日'
     
     cards = []
     slot_data = reports_dict.get(tslot, {})
@@ -164,6 +165,7 @@ def make_index(reports_dict, today):
     
     cards.append('<a class="card quant" href="quant.html" style="background:#fff;border:1px solid #e5e7eb;border-left:4px solid #7c3aed;border-radius:11px;padding:16px 18px;margin:12px 0;text-decoration:none;color:inherit;display:block"><div style="font-size:16px;font-weight:700;color:#1e40af">📈 量化分析 · Vibe-Trading</div><div style="font-size:13px;color:#64748b;margin-top:4px">多智能体辩论 · MCP 对接 · 策略回测</div></a>')
     
+    date_disp = '今日'
     index_html = f'''<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>A股智能分析 · 决策仪表盘</title><style>
 body{{margin:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#f5f7fa;color:#1f2937}}
 .wrap{{max-width:900px;margin:0 auto;padding:40px 20px}}
@@ -173,8 +175,8 @@ header h1{{margin:0 0 6px;font-size:24px}}header .sub{{opacity:.92;font-size:13p
 .topstat div{{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:14px;padding:3px 12px;font-size:12px}}
 footer{{margin-top:30px;color:#64748b;font-size:12px;text-align:center}}
 </style></head><body><div class="wrap">
-<header><h1>&#127919; A股智能分析 · 决策仪表盘</h1><div class="sub">DeepSeek AI · 4 只持仓 · 5 时段/天 · <span id="liveTime"></span> · 4 只持仓 · 5 时段/天</div><div class="topstat"><div><b>5次/天</b></div><div><b>4</b> 持仓</div><div><b>3</b> 报告类型</div><div><b>&asymp;0</b> 月成本</div></div></header>
-<div style="font-size:14px;font-weight:700;color:#6b7280;margin:24px 0 10px;padding-bottom:6px;border-bottom:1px solid #e5e7eb">&#128197; 今日 <span id="todayLabel"></span> · 5 时段分析</div>
+<header><h1>&#127919; A股智能分析 · 决策仪表盘</h1><div class="sub">DeepSeek AI · 4 只持仓 · 5 时段/天 · 4 只持仓 · 5 时段/天</div><div class="topstat"><div><b>5次/天</b></div><div><b>4</b> 持仓</div><div><b>3</b> 报告类型</div><div><b>&asymp;0</b> 月成本</div></div></header>
+<div style="font-size:14px;font-weight:700;color:#6b7280;margin:24px 0 10px;padding-bottom:6px;border-bottom:1px solid #e5e7eb">&#128197; 今日 {date_disp} · 5 时段分析</div>
 {''.join(cards)}
 <footer>Fork 自 daily_stock_analysis (49K stars)<br>时段: 09:00 早盘 / 09:30 开盘 / 12:00 午间 / 14:30 午盘 / 18:00 收盘<br>以上分析基于公开数据，不构成投资建议</footer>
 </div></body></html>'''
