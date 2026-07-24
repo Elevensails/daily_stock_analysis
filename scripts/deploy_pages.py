@@ -87,6 +87,12 @@ def gh_get_sha(path):
     except:
         return None
 
+def nearest_slot(tslot):
+    """Map any HHMM time to the nearest predefined slot."""
+    slots = ["0900", "0930", "1200", "1430", "1800"]
+    t = int(tslot[:2]) * 60 + int(tslot[2:])
+    return min(slots, key=lambda s: abs((int(s[:2])*60 + int(s[2:])) - t))
+
 def gh_list_files():
     """List all files on gh-pages branch."""
     try:
@@ -102,14 +108,15 @@ def make_report_page(md_file, html_name, now_ts):
         md = f.read()
     title = md.split('\n')[0].replace('# ', '').strip()
     body = md2html(md)
-    html = f'<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>{title}</title>{STORED_CSS}</head><body><div class="back"><a href="index.html">← 返回首页</a></div><div class="wrap"><div class="module">{body}</div><footer>{now_ts} · DeepSeek AI + akshare · 以上分析基于公开数据，不构成投资建议</footer></div></body></html>'
+    html = f'<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>{title}</title>{STORED_CSS}</head><body><div class="back"><a href="index.html">← 返回首页</a></div><div class="wrap"><div class="module">{body}</div><footer>{now_ts} · DeepSeek AI + akshare · 以上分析基于公开数据，不构成投资建议</footer></div><script>
+(function(){var d=new Date();var bj=new Date(d.getTime()+d.getTimezoneOffset()*60000+8*3600000);var ts=bj.toISOString().replace("T"," ").slice(0,16);var dt=bj.toISOString().slice(0,10);var el=document.getElementById("liveTime");if(el)el.textContent=ts;var dl=document.getElementById("todayLabel");if(dl)dl.textContent=dt;})();
+</script></body></html>'
     sha = gh_get_sha(html_name)
     return gh_put(html_name, html, sha)
 
 def make_slot_page(tslot, time_label, slot_name, color, color_dark, today, reports_dict):
     """Generate and push slot_HHMM.html page for a time slot."""
     now_ts = datetime.now(timezone(timedelta(hours=8))).strftime('%Y-%m-%d %H:%M')
-    date_disp = f'{today[:4]}-{today[4:6]}-{today[6:]}'
     
     cards = []
     slot_data = reports_dict.get(tslot, {})
@@ -129,7 +136,9 @@ def make_slot_page(tslot, time_label, slot_name, color, color_dark, today, repor
     # Quant card
     cards.append(f'<a class="card quant" href="quant.html" style="background:#fff;border:1px solid #e5e7eb;border-left:4px solid #7c3aed;border-radius:11px;padding:18px 20px;margin:14px 0;text-decoration:none;color:inherit;display:block"><div style="font-size:17px;font-weight:700">📈 量化分析 · Vibe-Trading</div><div style="font-size:13px;color:#64748b;margin-top:6px">多智能体辩论 · MCP 对接 · 策略回测</div></a>')
     
-    slot_html = f'''<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>{time_label} · A股分析</title>{STORED_CSS}</head><body><div class="back"><a href="index.html">← 返回首页</a></div><div class="wrap"><header style="background:linear-gradient(135deg,{color_dark},{color});color:#fff;padding:20px 18px;border-radius:14px;margin-bottom:20px"><h1 style="margin:0 0 4px;font-size:22px">🕐 {time_label} · {slot_name}</h1><div style="opacity:.85;font-size:13px">{date_disp} · DeepSeek AI · 4 只持仓</div></header>{chr(10).join(cards)}<footer style="margin-top:40px;color:#64748b;font-size:12px;text-align:center">以上分析基于公开数据，不构成投资建议</footer></div></body></html>'''
+    slot_html = f'''<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>{time_label} · A股分析</title>{STORED_CSS}</head><body><div class="back"><a href="index.html">← 返回首页</a></div><div class="wrap"><header style="background:linear-gradient(135deg,{color_dark},{color});color:#fff;padding:20px 18px;border-radius:14px;margin-bottom:20px"><h1 style="margin:0 0 4px;font-size:22px">🕐 {time_label} · {slot_name}</h1><div style="opacity:.85;font-size:13px">{date_disp} · DeepSeek AI · 4 只持仓</div></header>{chr(10).join(cards)}<footer style="margin-top:40px;color:#64748b;font-size:12px;text-align:center">以上分析基于公开数据，不构成投资建议</footer></div><script>
+(function(){var d=new Date();var bj=new Date(d.getTime()+d.getTimezoneOffset()*60000+8*3600000);var ts=bj.toISOString().replace("T"," ").slice(0,16);var dt=bj.toISOString().slice(0,10);var el=document.getElementById("liveTime");if(el)el.textContent=ts;var dl=document.getElementById("todayLabel");if(dl)dl.textContent=dt;})();
+</script></body></html>'''
     
     fn = f'slot_{tslot}.html'
     sha = gh_get_sha(fn)
@@ -159,7 +168,6 @@ def make_index(reports_dict, today):
     
     cards.append('<a class="card quant" href="quant.html" style="background:#fff;border:1px solid #e5e7eb;border-left:4px solid #7c3aed;border-radius:11px;padding:16px 18px;margin:12px 0;text-decoration:none;color:inherit;display:block"><div style="font-size:16px;font-weight:700;color:#1e40af">📈 量化分析 · Vibe-Trading</div><div style="font-size:13px;color:#64748b;margin-top:4px">多智能体辩论 · MCP 对接 · 策略回测</div></a>')
     
-    date_disp = f'{today[:4]}-{today[4:6]}-{today[6:]}'
     index_html = f'''<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>A股智能分析 · 决策仪表盘</title><style>
 body{{margin:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#f5f7fa;color:#1f2937}}
 .wrap{{max-width:900px;margin:0 auto;padding:40px 20px}}
@@ -169,11 +177,13 @@ header h1{{margin:0 0 6px;font-size:24px}}header .sub{{opacity:.92;font-size:13p
 .topstat div{{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:14px;padding:3px 12px;font-size:12px}}
 footer{{margin-top:30px;color:#64748b;font-size:12px;text-align:center}}
 </style></head><body><div class="wrap">
-<header><h1>&#127919; A股智能分析 · 决策仪表盘</h1><div class="sub">{ts} · DeepSeek AI · 4 只持仓 · 5 时段/天</div><div class="topstat"><div><b>5次/天</b></div><div><b>4</b> 持仓</div><div><b>3</b> 报告类型</div><div><b>&asymp;0</b> 月成本</div></div></header>
-<div style="font-size:14px;font-weight:700;color:#6b7280;margin:24px 0 10px;padding-bottom:6px;border-bottom:1px solid #e5e7eb">&#128197; 今日 {date_disp} · 5 时段分析</div>
+<header><h1>&#127919; A股智能分析 · 决策仪表盘</h1><div class="sub">DeepSeek AI · 4 只持仓 · 5 时段/天 · <span id="liveTime"></span> · 4 只持仓 · 5 时段/天</div><div class="topstat"><div><b>5次/天</b></div><div><b>4</b> 持仓</div><div><b>3</b> 报告类型</div><div><b>&asymp;0</b> 月成本</div></div></header>
+<div style="font-size:14px;font-weight:700;color:#6b7280;margin:24px 0 10px;padding-bottom:6px;border-bottom:1px solid #e5e7eb">&#128197; 今日 <span id="todayLabel"></span> · 5 时段分析</div>
 {''.join(cards)}
 <footer>Fork 自 daily_stock_analysis (49K stars)<br>时段: 09:00 早盘 / 09:30 开盘 / 12:00 午间 / 14:30 午盘 / 18:00 收盘<br>以上分析基于公开数据，不构成投资建议</footer>
-</div></body></html>'''
+</div><script>
+(function(){var d=new Date();var bj=new Date(d.getTime()+d.getTimezoneOffset()*60000+8*3600000);var ts=bj.toISOString().replace("T"," ").slice(0,16);var dt=bj.toISOString().slice(0,10);var el=document.getElementById("liveTime");if(el)el.textContent=ts;var dl=document.getElementById("todayLabel");if(dl)dl.textContent=dt;})();
+</script></body></html>'''
     
     sha = gh_get_sha('index.html')
     return gh_put('index.html', index_html, sha)
@@ -195,13 +205,15 @@ def main():
         m = re.match(r'report_(\d{4})_(\d{8})\.md', basename)
         mr = re.match(r'market_review_(\d{4})_(\d{8})\.md', basename)
         if m:
-            tslot, date = m.group(1), m.group(2)
+            tslot_raw, date = m.group(1), m.group(2)
+            tslot = nearest_slot(tslot_raw)
             html_name = basename.replace('.md', '.html')
             reports_dict.setdefault(tslot, {})['stock'] = html_name
             status = make_report_page(f, html_name, now_ts)
             print(f'  {status} {html_name}')
         elif mr:
-            tslot, date = mr.group(1), mr.group(2)
+            tslot_raw, date = mr.group(1), mr.group(2)
+            tslot = nearest_slot(tslot_raw)
             html_name = basename.replace('.md', '.html')
             reports_dict.setdefault(tslot, {})['market'] = html_name
             status = make_report_page(f, html_name, now_ts)
