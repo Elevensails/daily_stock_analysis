@@ -38,7 +38,11 @@ jobs:
           GENERATION_BACKEND: litellm
         run: python main.py --no-notify
       - name: Debug - list reports dir
-        run: ls -la reports/ || echo "reports/ not found"
+        run: |
+          echo "=== reports/ ==="
+          ls -laR reports/ 2>/dev/null || echo "(reports/ not found)"
+          echo "=== all .md files ==="
+          find . -name "*.md" -not -path "./.git/*" | head -30
       - name: Rename reports with time label
         env:
           TIME_SLOT: ${{ inputs.time_slot }}
