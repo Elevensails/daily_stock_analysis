@@ -49,6 +49,16 @@ jobs:
           for f in reports/report_.md reports/market_review_.md; do
             [ -f "" ] && cp "" "__.md" && echo "renamed  -> __.md"
           done
+      - name: Vibe-Trading 量化分析
+        continue-on-error: true
+        run: |
+          pip install vibe-trading-ai --quiet 2>&1 | tail -1
+          mkdir -p reports
+          cat > reports/vibe_report.md << 'VEOF'
+# Vibe-Trading 量化分析
+> 量化引擎已安装。完整多智能体分析需 WorkBuddy MCP 交互触发。
+> 每日 5 时段自动安装并输出占位报告。
+VEOF
       - name: Deploy to GH Pages
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
