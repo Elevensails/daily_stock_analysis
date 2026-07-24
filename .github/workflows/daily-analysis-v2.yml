@@ -46,21 +46,24 @@ jobs:
           GENERATION_BACKEND: litellm
         run: |
           mkdir -p reports
-          echo "TSLOT=$TSLOT DATE=$DATE"
           python main.py --no-notify > reports/report_${TSLOT}_${DATE}.md 2>&1
-          echo "main.py exit: $?"
-          echo "=== reports/ after main.py ===" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          ls -la reports/ >> $GITHUB_STEP_SUMMARY 2>&1
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          find . -name "*.md" -not -path "./.git/*" -not -path "./docs/*" -not -path "./tests/*" >> $GITHUB_STEP_SUMMARY 2>&1
-          echo "=== end ===" >> $GITHUB_STEP_SUMMARY
+          echo "main.py exit: $?" 
+          # Ensure file always has content
+          echo "# DeepSeek AI Analysis - ${TSLOT}" | cat - reports/report_${TSLOT}_${DATE}.md > tmp && mv tmp reports/report_${TSLOT}_${DATE}.md
+          echo "File $(wc -c < reports/report_${TSLOT}_${DATE}.md) bytes"
+          echo "=== reports/ ==="
+          ls -la reports/
       - name: Deploy to GH Pages
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "=== Before deploy ===" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          ls -la reports/ >> $GITHUB_STEP_SUMMARY 2>&1
-          echo '```' >> $GITHUB_STEP_SUMMARY
           python3 scripts/deploy_pages.py
+      - name: Verify deploy
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          sleep 3
+          FILES=$(curl -s -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/Elevensails/daily_stock_analysis/contents/?ref=gh-pages" \
+            | python3 -c "import sys,json; [print(f['name']) for f in json.load(sys.stdin) if 'report_' in f['name']]")
+          echo "Reports on gh-pages: $FILES"
