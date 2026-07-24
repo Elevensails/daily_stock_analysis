@@ -17,7 +17,6 @@ on:
         required: false
         default: full
 
-
 jobs:
   analyze:
     runs-on: ubuntu-latest
@@ -44,7 +43,7 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
-# TIME_LABEL is set by each cron trigger to give the LLM time context
+
       
       - name: 设置时段标签
         run: |
