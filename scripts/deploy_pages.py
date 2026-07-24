@@ -232,6 +232,24 @@ def main():
         else:
             print(f'  skip (no match): {basename}')
     
+    # Also scan gh-pages for existing reports (preserve history)
+    existing = gh_list_files()
+    if existing:
+        for item in existing:
+            name = item['name']
+            m = re.match(r'report_(\d{4})_(\d{8})\.html', name)
+            mr = re.match(r'market_review_(\d{4})_(\d{8})\.html', name)
+            vb = re.match(r'vibe_(\d{4})_(\d{8})\.html', name)
+            if m and 'stock' not in reports_dict.get(m.group(1), {}):
+                reports_dict.setdefault(m.group(1), {})['stock'] = name
+                print(f'  (existing) {name}')
+            elif mr and 'market' not in reports_dict.get(mr.group(1), {}):
+                reports_dict.setdefault(mr.group(1), {})['market'] = name
+                print(f'  (existing) {name}')
+            elif vb and 'vibe' not in reports_dict.get(vb.group(1), {}):
+                reports_dict.setdefault(vb.group(1), {})['vibe'] = name
+                print(f'  (existing) {name}')
+    
     # Generate slot pages for each time slot
     SLOTS = {
         '0900': ('09:00', '早盘分析', '#f59e0b', '#92400e'),
