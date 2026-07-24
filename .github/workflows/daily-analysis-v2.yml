@@ -33,19 +33,18 @@ jobs:
           if [ -z "$TSLOT" ]; then
             TSLOT=$(python3 -c "from datetime import datetime,timezone,timedelta;print(datetime.now(timezone(timedelta(hours=8))).strftime('%H%M'))")
           fi
-          DATE=$(python3 -c "from datetime import datetime,timezone,timedelta;print(datetime.now(timezone(timedelta(hours=8))).strftime('%Y%m%d'))")
           echo "TSLOT=$TSLOT" >> $GITHUB_ENV
-          echo "DATE=$DATE" >> $GITHUB_ENV
       - name: Run analysis
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           STOCK_LIST: ${{ vars.STOCK_LIST }}
           GENERATION_BACKEND: litellm
           LITELLM_MODEL: deepseek/deepseek-v4-flash
-        run: |
-          mkdir -p reports
-          python main.py --no-notify > reports/report_${TSLOT}_${DATE}.md 2>&1
-          echo "main.py exit=$?, file=$(wc -c < reports/report_${TSLOT}_${DATE}.md) bytes"
+        run: python main.py --no-notify
+      - name: Rename reports
+        env:
+          TIME_SLOT: ${{ inputs.time_slot }}
+        run: python3 scripts/rename_reports.py
       - name: Deploy to GH Pages
         env:
           GITHUB_TOKEN: ${{ github.token }}

@@ -112,7 +112,7 @@ def make_report_page(md_file, html_name, now_ts):
         md = f.read()
     title = md.split('\n')[0].replace('# ', '').strip()
     body = md2html(md)
-    html = f'<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>{title}</title>{STORED_CSS}</head><body><div class="back"><a href="index.html">← 返回首页</a></div><div class="wrap"><div class="module">{body}</div><footer>{now_ts} · DeepSeek AI + akshare · 以上分析基于公开数据，不构成投资建议</footer></div></body></html>'
+    html = f'<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>{title}</title>{STORED_CSS}</head><body><div class="back"><a href="index.html" title="首页">🏠</a> <a href="javascript:history.back()" title="返回">←</a></div><div class="wrap"><div class="module">{body}</div><footer>{now_ts} · DeepSeek AI + akshare · 以上分析基于公开数据，不构成投资建议</footer></div></body></html>'
     sha = gh_get_sha(html_name)
     return gh_put(html_name, html, sha)
 
@@ -139,7 +139,7 @@ def make_slot_page(tslot, time_label, slot_name, color, color_dark, today, repor
     # Quant card
     cards.append(f'<a class="card quant" href="quant.html" style="background:#fff;border:1px solid #e5e7eb;border-left:4px solid #7c3aed;border-radius:11px;padding:18px 20px;margin:14px 0;text-decoration:none;color:inherit;display:block"><div style="font-size:17px;font-weight:700">📈 量化分析 · Vibe-Trading</div><div style="font-size:13px;color:#64748b;margin-top:6px">多智能体辩论 · MCP 对接 · 策略回测</div></a>')
     
-    slot_html = f'''<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>{time_label} · A股分析</title>{STORED_CSS}</head><body><div class="back"><a href="index.html">← 返回首页</a></div><div class="wrap"><header style="background:linear-gradient(135deg,{color_dark},{color});color:#fff;padding:20px 18px;border-radius:14px;margin-bottom:20px"><h1 style="margin:0 0 4px;font-size:22px">🕐 {time_label} · {slot_name}</h1><div style="opacity:.85;font-size:13px">{date_disp} · DeepSeek AI · 4 只持仓</div></header>{chr(10).join(cards)}<footer style="margin-top:40px;color:#64748b;font-size:12px;text-align:center">以上分析基于公开数据，不构成投资建议</footer></div></body></html>'''
+    slot_html = f'''<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>{time_label} · A股分析</title>{STORED_CSS}</head><body><div class="back"><a href="index.html" title="首页">🏠</a> <a href="javascript:history.back()" title="返回">←</a></div><div class="wrap"><header style="background:linear-gradient(135deg,{color_dark},{color});color:#fff;padding:20px 18px;border-radius:14px;margin-bottom:20px"><h1 style="margin:0 0 4px;font-size:22px">🕐 {time_label} · {slot_name}</h1><div style="opacity:.85;font-size:13px">{date_disp} · DeepSeek AI · 4 只持仓</div></header>{chr(10).join(cards)}<footer style="margin-top:40px;color:#64748b;font-size:12px;text-align:center">以上分析基于公开数据，不构成投资建议</footer></div></body></html>'''
     
     fn = f'slot_{tslot}.html'
     sha = gh_get_sha(fn)
