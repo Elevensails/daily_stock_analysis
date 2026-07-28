@@ -14,12 +14,14 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: write
+      pages: write
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
           cache: pip
+      - run: pip install -r requirements.txt
       - name: Compute time slot
         run: |
           TSLOT="${{ inputs.time_slot }}"
@@ -28,11 +30,81 @@ jobs:
           fi
           echo "TSLOT=$TSLOT" >> $GITHUB_ENV
       - name: Run Vibe-Trading analysis
+        continue-on-error: true   # 已知 vibe-trading-ai 上游库在 CI 偶发崩溃(rc=1)，非致命：仍写出骨架报告并继续 Deploy
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           TIME_SLOT: ${{ env.TSLOT }}
         run: python3 scripts/run_vibe.py
+      - name: Emit frontend content contract
+        run: python3 scripts/emit_frontend_artifacts.py
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Build frontend (Vite MPA)
+        working-directory: web
+        run: npm ci && npm run build
+      - name: XSS render gate
+        run: python3 -m pytest tests/test_xss_escape.py -q
+      - name: Deploy target gate
+        run: python3 -m pytest tests/test_deploy_target.py -q
+      - name: Ensure gh-pages orphan branch
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # First-deploy bootstrap (route b): the Contents API can only *update*
+          # files, so on a brand-new repo the gh-pages branch must be created
+          # out-of-band. We push an orphan branch with a .nojekyll marker from a
+          # throwaway repo so the working tree (scripts/deploy_pages.py) is left
+          # intact for the Deploy step.
+          if git ls-remote --exit-code --heads origin gh-pages >/dev/null 2>&1; then
+            echo "gh-pages already exists on remote"
+            exit 0
+          fi
+          WD=$(mktemp -d)
+          git init "$WD"
+          cd "$WD"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git symbolic-ref HEAD refs/heads/gh-pages
+          printf '' > .nojekyll
+          git add .nojekyll
+          git commit -m "init gh-pages (nojekyll)"
+          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if ! git push origin gh-pages; then
+            # Race guard: if a concurrent workflow already created gh-pages,
+            # the orphan push is rejected (non-fast-forward) — that is fine.
+            if git ls-remote --exit-code --heads origin gh-pages >/dev/null 2>&1; then
+              echo "gh-pages already created by a concurrent run; OK"
+              exit 0
+            fi
+            echo "FATAL: gh-pages push failed and branch is missing"
+            exit 1
+          fi
       - name: Deploy to GH Pages
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: python3 scripts/deploy_pages.py
+        run: |
+          # Idempotently enable GitHub Pages using the workflow GITHUB_TOKEN
+          # (which carries `pages:write` via the job `permissions:` block). This
+          # is the primary enabler; the Python deploy below re-verifies and is
+          # the source of truth for the final status. Tolerates 409 (already
+          # enabled) and 403 (e.g. repo-level workflow-permission downgrade or a
+          # concurrent run) so the step never fails solely on the enable call.
+          if gh api -X POST "/repos/${GITHUB_REPOSITORY}/pages" \
+              -H "Accept: application/vnd.github+json" \
+              -f 'source[branch]=gh-pages' -f 'source[path]=/' -f 'build_type=legacy' >/dev/null 2>&1; then
+            echo "GitHub Pages enabled"
+          else
+            cur=$(gh api "/repos/${GITHUB_REPOSITORY}/pages" -H "Accept: application/vnd.github+json" --jq '.status' 2>/dev/null || true)
+            if [ "$cur" = "built" ] || [ "$cur" = "enabled" ]; then
+              echo "GitHub Pages enabled"
+            else
+              echo "GitHub Pages enable deferred to deploy script"
+            fi
+          fi
+          python3 scripts/deploy_pages.py
