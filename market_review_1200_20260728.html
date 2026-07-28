@@ -1,0 +1,152 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>🎯 大盘复盘</title><style>
+:root {
+  --pri: #1e3a5f; --pri-lt: #1e40af; --accent: #2563eb;
+  --bg: #f0f4f8; --card: #fff; --card-hover: #f8fafc;
+  --text: #1e293b; --text-mut: #64748b; --text-dim: #94a3b8;
+  --border: #e2e8f0; --border-focus: #93c5fd;
+  --green: #16a34a; --green-bg: #dcfce7;
+  --red: #dc2626; --red-bg: #fee2e2;
+  --amber: #d97706; --amber-bg: #fef3c7;
+  --purple: #7c3aed; --purple-bg: #f3e8ff;
+  --radius: 12px; --radius-sm: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);font-family:-apple-system,"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;font-size:15px;line-height:1.75;color:var(--text);-webkit-font-smoothing:antialiased}
+.wrap{max-width:960px;margin:0 auto;padding:0 20px 60px}
+
+/* Navigation */
+.nav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;gap:8px;align-items:center;margin:0 -20px 24px}
+.nav a,.nav span{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;text-decoration:none;transition:all .15s}
+.nav a{background:var(--pri);color:#fff}
+.nav a:hover{background:var(--pri-lt);transform:translateY(-1px)}
+.nav a.ghost{background:transparent;color:var(--pri);border:1px solid var(--border)}
+.nav a.ghost:hover{background:var(--card-hover)}
+.nav .sep{color:var(--text-dim);font-size:14px;padding:0 2px}
+
+/* Cards */
+.card{display:block;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;margin:14px 0;text-decoration:none;color:inherit;transition:all .2s;box-shadow:var(--shadow)}
+.card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);border-color:var(--border-focus)}
+.card .card-title{font-size:17px;font-weight:700;color:var(--pri);margin-bottom:4px}
+.card .card-desc{font-size:13px;color:var(--text-mut);line-height:1.6}
+.card.pending{opacity:.45;pointer-events:none}
+.card.stock{border-left:4px solid var(--accent)}
+.card.market{border-left:4px solid #0d9488}
+.card.quant{border-left:4px solid var(--purple);background:linear-gradient(135deg,var(--purple-bg),#fff)}
+.card.live{border-left:4px solid var(--amber);background:linear-gradient(135deg,var(--amber-bg),#fff)}
+.card.archive{border-left:4px solid var(--text-dim)}
+
+.badge{display:inline-block;color:#fff;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;margin-left:8px;vertical-align:middle}
+.badge-ok{background:var(--green)}
+.badge-pending{background:var(--text-dim)}
+
+/* Header */
+.hero{background:linear-gradient(135deg,var(--pri),var(--pri-lt));color:#fff;padding:28px 24px;border-radius:var(--radius);margin-bottom:24px;text-align:center;box-shadow:var(--shadow-lg)}
+.hero h1{font-size:24px;margin-bottom:6px;letter-spacing:-.3px}
+.hero .meta{opacity:.88;font-size:13px;margin-top:8px}
+.stats{display:flex;gap:10px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+.stats span{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:3px 14px;font-size:12px;white-space:nowrap}
+
+/* Section */
+.section-title{font-size:14px;font-weight:700;color:var(--text-mut);margin:28px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.section-title .count{font-size:12px;font-weight:500;color:var(--text-dim)}
+
+/* Report Content */
+.module{background:var(--card);border-radius:var(--radius);padding:24px 28px;margin:16px 0;box-shadow:var(--shadow)}
+.module h1{font-size:22px;margin:0 0 20px;color:var(--pri);padding-bottom:12px;border-bottom:2px solid var(--border)}
+.module h2{font-size:18px;margin:28px 0 14px;padding:10px 0 10px 14px;border-left:4px solid var(--accent);background:linear-gradient(90deg,#eff6ff,transparent);border-radius:0 var(--radius-sm) var(--radius-sm) 0;color:var(--pri)}
+.module h3{font-size:15px;margin:20px 0 10px;color:var(--text);font-weight:700}
+.module p{font-size:14px;line-height:1.8;color:var(--text);margin:0 0 10px}
+.module blockquote{border-left:4px solid var(--accent);background:#eff6ff;padding:12px 16px;margin:12px 0;border-radius:0 var(--radius-sm) var(--radius-sm) 0;font-size:14px;color:var(--pri)}
+.module li{font-size:14px;line-height:1.8;color:var(--text);margin:3px 0;padding-left:4px}
+.module li::marker{color:var(--accent)}
+.module hr{border:none;border-top:1px solid var(--border);margin:20px 0}
+.module strong{color:var(--pri);font-weight:700}
+.module code{background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:13px;color:var(--red)}
+
+/* Stock section cards inside reports */
+.stock-section{border:1px solid var(--border);border-radius:var(--radius);margin:20px 0;overflow:hidden}
+.stock-section h2{margin:0;padding:14px 18px;background:linear-gradient(90deg,#eff6ff,#f8fafc);border-left:4px solid var(--accent);border-radius:0;font-size:16px}
+.stock-section .stock-body{padding:0 18px 14px}
+
+/* Tables */
+table.tbl{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0;border-radius:var(--radius-sm);overflow:hidden;box-shadow:var(--shadow)}
+table.tbl th{background:var(--pri);color:#fff;padding:10px 12px;text-align:left;font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.3px}
+table.tbl td{padding:8px 12px;border-bottom:1px solid var(--border);background:var(--card)}
+table.tbl tr:last-child td{border-bottom:none}
+table.tbl tr:hover td{background:var(--card-hover)}
+
+/* Footer */
+footer{margin-top:40px;color:var(--text-dim);font-size:12px;text-align:center;border-top:1px solid var(--border);padding-top:16px}
+footer a{color:var(--accent);text-decoration:none}
+
+/* Archive page */
+.archive-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.archive-item{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;text-decoration:none;color:var(--text);transition:all .15s;box-shadow:var(--shadow)}
+.archive-item:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);border-color:var(--accent)}
+.archive-item .date{font-weight:700;color:var(--pri);font-size:15px}
+.archive-item .count{font-size:12px;color:var(--text-mut);margin-top:4px}
+
+/* Responsive */
+@media(max-width:640px){
+  .wrap{padding:0 12px 40px}
+  .nav{margin:0 -12px 16px;padding:10px 12px}
+  .hero{padding:20px 16px;border-radius:var(--radius-sm)}
+  .module{padding:16px 18px}
+  .card{padding:14px 16px}
+  .archive-list{grid-template-columns:1fr}
+}
+</style></head>
+<body><div class="nav"><a href="index.html">&#127968; 首页</a><span class="sep">/</span><a href="archive.html">&#128451; 历史</a><span class="sep">/</span><a href="javascript:history.back()" class="ghost">&#8592; 返回</a></div>
+<div class="wrap"><div class="module"><h1>🎯 大盘复盘</h1>
+<div class="stock-section"><h2>2026-07-28 大盘复盘</h2><div class="stock-body">
+<blockquote>今日市场严重分化，上证50权重护盘但科技成长板块集体暴跌，指数层面与个股情绪背离，短期处于防守状态。明日优先观察创业板指能否在关键位企稳，以及领跌板块是否扩散至其他成长方向。</blockquote>
+<h3>一、盘面总览</h3>
+<p>指数全线收跌，但涨跌家数接近（上涨2835家 vs 下跌2521家），涨停59家、跌停14家，整体情绪偏弱但非恐慌。两市成交额1.34万亿，较近期偏大，为放量下跌，抛压主要在权重股和科技成长方向。市场核心矛盾是极端结构分化——大盘价值抗跌，小盘成长重挫，短线风险偏好骤降。</p>
+<li>**盘面信号**：45/100（震荡，需观察）</li>
+<li>**信号依据**：上涨家数占比 53%，市场分化；主要指数平均涨跌幅 -2.84%；涨跌停差 +45</li>
+<li>**操作建议**：信号分化，控制仓位并等待量价确认。</li>
+<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>指标</th><th>数值</th><th>观察</th></tr></thead><tbody>
+<tr><td>上涨/下跌/平盘</td><td>2835 / 2521 / 167</td><td>上涨占比(不含平盘) 52.9%</td></tr>
+<tr><td>涨停/跌停</td><td>59 / 14</td><td>涨跌停差 +45</td></tr>
+<tr><td>两市成交额</td><td>13362 亿</td><td>中等活跃</td></tr>
+</tbody></table></div>
+<h3>二、指数结构</h3>
+<p>上证指数仅跌0.98%，上证50跌1.00%，显示银行、保险、能源等传统蓝筹护盘，指数未破位。深证成指跌3.42%，创业板指暴跌5.37%，科创50跌4.03%，三者均创近期新低，形成“破位”走势。上证与创业板走势完全背离，表明市场并非系统风险，而是资金向安全边际高的方向切换。关键支撑：创业板指需观察3400点整数关口能否守住，若继续向下则可能触发更多止损盘；上证指数若能维持3800点上方窄幅震荡，则大盘风格可能持续。</p>
+<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>指数</th><th>最新</th><th>涨跌幅</th><th>开盘</th><th>最高</th><th>最低</th><th>振幅</th><th>成交额(亿)</th></tr></thead><tbody>
+<tr><td>上证指数</td><td>3820.52</td><td>🔴 -0.98%</td><td>3823.13</td><td>3844.01</td><td>3800.50</td><td>1.13%</td><td>6134</td></tr>
+<tr><td>深证成指</td><td>13664.80</td><td>🔴 -3.42%</td><td>13830.35</td><td>13940.99</td><td>13583.13</td><td>2.53%</td><td>7144</td></tr>
+<tr><td>创业板指</td><td>3397.97</td><td>🔴 -5.37%</td><td>3478.86</td><td>3511.70</td><td>3372.78</td><td>3.87%</td><td>3374</td></tr>
+<tr><td>科创50</td><td>1735.01</td><td>🔴 -4.03%</td><td>1755.87</td><td>1797.58</td><td>1724.70</td><td>4.03%</td><td>789</td></tr>
+<tr><td>上证50</td><td>2920.89</td><td>🔴 -1.00%</td><td>2921.31</td><td>2931.15</td><td>2901.73</td><td>1.00%</td><td>1117</td></tr>
+<tr><td>沪深300</td><td>4596.76</td><td>🔴 -2.25%</td><td>4623.80</td><td>4646.49</td><td>4569.52</td><td>1.64%</td><td>4051</td></tr>
+</tbody></table></div>
+<h3>三、板块主线</h3>
+<p>领涨板块：体育(+3.30%)、卫生(+2.47%)、餐饮业(+2.27%)，均为消费、服务类传统行业，无明显事件催化，更多体现资金向低估值、业绩确定性高的方向轮动。领跌板块：计算机通信电子制造(-7.00%)、建筑安装(-6.08%)、仪器仪表(-5.78%)，均为前期涨幅较大的科技与成长板块，跌幅远超大盘，属于高位补跌或恐慌性出货。目前尚未形成可持续新主线，体育等小板块难以带动指数。需警惕科技板块是否出现超跌反弹，否则市场主线将成为以避险为主的防御性品种（食品、医药、公用事业）。</p>
+<p>#### 行业板块领涨 Top 5</p>
+<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>排名</th><th>行业板块</th><th>涨跌幅</th></tr></thead><tbody>
+<tr><td>1</td><td>体育</td><td>+3.30%</td></tr>
+<tr><td>2</td><td>卫生</td><td>+2.47%</td></tr>
+<tr><td>3</td><td>餐饮业</td><td>+2.27%</td></tr>
+<tr><td>4</td><td>酒、饮料和精制茶制造业</td><td>+2.17%</td></tr>
+<tr><td>5</td><td>教育</td><td>+2.03%</td></tr>
+</tbody></table></div>
+<p>#### 行业板块领跌 Top 5</p>
+<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>排名</th><th>行业板块</th><th>涨跌幅</th></tr></thead><tbody>
+<tr><td>1</td><td>计算机、通信和其他电子设备制造业</td><td>-7.00%</td></tr>
+<tr><td>2</td><td>建筑安装业</td><td>-6.08%</td></tr>
+<tr><td>3</td><td>仪器仪表制造业</td><td>-5.78%</td></tr>
+<tr><td>4</td><td>有色金属冶炼和压延加工业</td><td>-3.11%</td></tr>
+<tr><td>5</td><td>非金属矿物制品业</td><td>-3.05%</td></tr>
+</tbody></table></div>
+<h3>四、资金与情绪</h3>
+<p>成交额1.34万亿，属放量下跌，说明主动卖盘增加，尤其是科技方向。上涨家数多于下跌家数，但指数普跌，说明大量中小市值股票未跟随指数暴跌（可能前期已回调），而权重股中的科技巨头（如创业板权重股）贡献了大部分跌幅。涨停59家尚可，跌停14家不算极端，但计算机通信板块跌停或跌幅超7%的个股数量可能较多，情绪集中在科技股。风险偏好降至低位，追涨创业板和科创板的意愿极弱，短线资金可能转向主板低价股或次新股。</p>
+<h3>五、消息催化</h3>
+<p>当日无重大新闻注入，按近3日逻辑推测：科技板块下跌可能源于对海外出口限制升级的担忧，或部分芯片、AI龙头股业绩不及预期；消费板块上涨可能与地方政府发放消费券、体育产业扶持政策预期有关。明日需关注晚间是否有科技行业相关澄清或利好，否则科技抛压可能延续。</p>
+<h3>六、明日交易计划</h3>
+<p>结论：均衡偏防守。仓位建议降至五成以下（当前持仓若科技较重需进一步减仓）。关注方向：上证50成分股（银行、公用事业、消费龙头），可短线博弈体育、餐饮等小板块持续性但仓位要轻。回避方向：创业板指、科创50、所有科技成长类（计算机、电子、半导体）及其产业链。触发失效条件：若明日科技板块早盘快速反弹且回补今日跌幅一半以上，则市场情绪可能修复，可视为超跌机会，但仍需观察板块联动性，暂不贸然加仓。</p>
+<h3>七、风险提示</h3>
+<p>创业板若继续破位可能引发基金赎回负反馈，带动权重股补跌；科技板块短期跌幅过大后可能出现弱反弹，但趋势已转弱，切忌轻易抄底；市场成交额若突然缩量至万亿以下，则流动性风险上升。建议仅供参考，不构成投资建议。</p>
+</div></div></div>
+<footer>2026-07-28 12:03 · DeepSeek AI · 以上分析基于公开数据，不构成投资建议</footer></div></body></html>
