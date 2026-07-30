@@ -53,9 +53,9 @@
       "label": "09:30",
       "name": "开盘追踪",
       "fragments": {
-        "report": null,
-        "market_review": null,
-        "vibe": "vibe_0930_20260730.html"
+        "report": "report_0930_20260730.html",
+        "market_review": "market_review_0930_20260730.html",
+        "vibe": null
       }
     }
   },
