@@ -44,9 +44,9 @@
       "label": "09:00",
       "name": "早盘分析",
       "fragments": {
-        "report": null,
-        "market_review": null,
-        "vibe": "vibe_0900_20260730.html"
+        "report": "report_0900_20260730.html",
+        "market_review": "market_review_0900_20260730.html",
+        "vibe": null
       }
     },
     "0930": {
